@@ -1,0 +1,27 @@
+@* Perfil público de empresa *@
+@{ ViewData["Title"] = "Perfil de empresa"; }
+@inject ImageUploadService Uploads
+@if (ViewBag.Empresa is SkillLink_dotnet.Models.Empresa e)
+{
+  <div class="card mb-3"><div class="card-body">
+    <div class="row g-3 align-items-center">
+      <div class="col-md-3 text-center">
+        <img src="@Uploads.Url(e.Logo)" alt="Logo de la empresa" class="img-fluid rounded" style="width:150px;height:150px;object-fit:cover" />
+      </div>
+      <div class="col-md-9">
+        <h4>@e.RazonSocial</h4>
+        <p class="text-muted">@e.Sector · @e.Ciudad · @e.Telefono · RUC @e.Ruc</p>
+        <p>@e.Descripcion</p>
+      </div>
+    </div>
+  </div></div>
+  <h4>Últimas ofertas</h4>
+  @foreach (var o in (IEnumerable<SkillLink_dotnet.Models.Publicacion>)ViewBag.Ofertas)
+  {
+    <div class="card mb-2"><div class="card-body">
+      <span class="sk-badge-tipo">@o.Tipo</span>
+      <a asp-controller="Feed" asp-action="Details" asp-route-id="@o.Id" class="ms-2">@(o.Titulo ?? "(sin título)")</a>
+    </div></div>
+  }
+}
+else { <div class="alert alert-warning">Empresa no encontrada.</div> }

@@ -1,0 +1,26 @@
+# Blueprint de Render: https://render.com/docs/blueprint-spec
+# Crear el MySQL externo aparte (Clever Cloud / Aiven / propio) y pegar su
+# cadena en ConnectionStrings__DefaultConnection antes del primer deploy.
+services:
+  - type: web
+    name: skilllink
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      # Solo primer deploy (crea tablas + seed). Luego poner en false o quitarla.
+      - key: RUN_MIGRATIONS
+        value: true
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      # Versión del MySQL en la nube (ej. 8.0.36). Debe coincidir con el servidor.
+      - key: MySql__ServerVersion
+        value: 8.0.36
+      - key: AdminSeed__Email
+        value: admin@skilllink.local
+      - key: AdminSeed__Dni
+        value: "10000001"
+      # Contraseña del admin inicial. Rotarla/quitarla tras el primer login.
+      - key: AdminSeed__Password
+        sync: false

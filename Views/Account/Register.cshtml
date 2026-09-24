@@ -1,0 +1,40 @@
+@* Crear cuenta *@
+@model SkillLink_dotnet.ViewModels.RegisterVm
+@{ ViewData["Title"] = "Registrarse"; }
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="sk-auth-card">
+      <div class="sk-auth-head">Crear cuenta</div>
+      <div class="sk-auth-body">
+        <form asp-action="Register" method="post" novalidate>
+          @Html.AntiForgeryToken()
+          <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+          <div class="mb-3">
+            <label asp-for="Dni" class="form-label">Documento Nacional de Identidad o Carnet de Extranjería</label>
+            <input asp-for="Dni" class="form-control sk-auth-input" maxlength="12" placeholder="12345678" />
+            <span asp-validation-for="Dni" class="text-danger"></span>
+          </div>
+          <div class="mb-3">
+            <label asp-for="Email" class="form-label">Correo Electrónico</label>
+            <input asp-for="Email" class="form-control sk-auth-input" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+          </div>
+          <div class="mb-3">
+            <label asp-for="Password" class="form-label">Contraseña</label>
+            <input asp-for="Password" class="form-control sk-auth-input" />
+            <span asp-validation-for="Password" class="text-danger"></span>
+          </div>
+          <div class="mb-4">
+            <label asp-for="Rol" class="form-label">Tipo de cuenta</label>
+            <select asp-for="Rol" class="form-select sk-auth-input text-center">
+              <option value="trabajador">Perfil Trabajador</option>
+              <option value="empresa">Empresa / Cliente</option>
+            </select>
+          </div>
+          <button type="submit" class="sk-btn-continuar">CONTINUAR</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

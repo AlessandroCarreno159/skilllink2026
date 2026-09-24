@@ -1,0 +1,60 @@
+@* Parcial: tarjeta de publicación del feed *@
+@model SkillLink_dotnet.Models.Publicacion
+@inject ImageUploadService Uploads
+@using SkillLink_dotnet.Services
+@{
+  var counts = ViewBag.CommentsCount as Dictionary<int, int>;
+  var reps = ViewBag.Rep as Dictionary<string, SkillLink_dotnet.Models.Reputacion>;
+  var nComent = counts is not null && counts.TryGetValue(Model.Id, out var cc) ? cc : 0;
+  SkillLink_dotnet.Models.Reputacion? rep = null;
+  reps?.TryGetValue(Model.AutorId, out rep);
+  var autorUrl = ImageUploadService.PerfilUrl(Model.Autor);
+  var oficio = Model.Autor?.Perfil?.Especialidad ?? Model.Autor?.Empresa?.Sector;
+}
+<div class="card sk-pub-card mb-3 h-100">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <img src="@Uploads.Url(Model.Imagen)" alt="Imagen de la publicación" class="sk-pub-img" loading="lazy" />
+      </div>
+      <div class="col-md-8">
+        <span class="sk-badge-tipo">@Catalogos.Tipo(Model.Tipo)</span>
+        <h3 class="sk-pub-title">@(Model.Titulo ?? "(sin título)")</h3>
+        <p class="d-flex align-items-center gap-2 mb-1">
+          @if (autorUrl is null)
+          {
+            <img src="@Uploads.Avatar(Model.Autor)" alt="" class="rounded-circle" style="width:24px;height:24px;object-fit:cover" loading="lazy" />
+            <small class="text-muted">@ImageUploadService.NombrePublico(Model.Autor)</small>
+          }
+          else
+          {
+            <a href="@autorUrl"><img src="@Uploads.Avatar(Model.Autor)" alt="" class="rounded-circle" style="width:24px;height:24px;object-fit:cover" loading="lazy" /></a>
+            <a href="@autorUrl" class="text-decoration-none"><small>@ImageUploadService.NombrePublico(Model.Autor)</small></a>
+          }
+        </p>
+        @if (!string.IsNullOrWhiteSpace(oficio))
+        {
+          <p class="mb-1"><strong>@oficio</strong></p>
+        }
+        @if (rep is not null && rep.TotalCalificaciones > 0)
+        {
+          <p class="sk-meta"><i class="bi bi-star-fill sk-ic-star"></i> @rep.PromedioEstrellas.ToString("0.0") · @rep.TotalCalificaciones reseñas</p>
+        }
+        <p class="sk-meta"><i class="bi bi-geo-alt-fill sk-ic-pin"></i> @Catalogos.Ciudad(Model)</p>
+        <p class="sk-meta"><i class="bi bi-cash-coin sk-ic-cash"></i> @Catalogos.Precio(Model)</p>
+        <div class="sk-pub-actions d-flex flex-wrap gap-2">
+          <a asp-controller="Feed" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye-fill"></i> Detalle</a>
+          <a asp-controller="Feed" asp-action="Details" asp-route-id="@Model.Id" asp-fragment="comentarios" class="btn btn-sm sk-btn-lila"><i class="bi bi-chat-dots-fill"></i> Ver comentarios (@nComent)</a>
+          @if (User.IsInRole("admin"))
+          {
+            <form asp-controller="Admin" asp-action="EliminarPublicacion" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('Eliminar DEFINITIVAMENTE esta publicación?');">
+              @Html.AntiForgeryToken()
+              <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash-fill"></i></button>
+            </form>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

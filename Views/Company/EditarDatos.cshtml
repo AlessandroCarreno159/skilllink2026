@@ -1,0 +1,19 @@
+@* Editar datos de empresa (sin razón social) *@
+@model SkillLink_dotnet.ViewModels.EmpresaDatosVm
+@{ ViewData["Title"] = "Editar datos de la empresa"; }
+<h2>Editar datos de la empresa</h2>
+<p class="text-muted">La razón social y el RUC solo puede modificarlos un administrador.</p>
+<form method="post">
+  @Html.AntiForgeryToken()
+  <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+  <div class="mb-3"><label asp-for="NombreContacto" class="form-label">Nombre de contacto</label><input asp-for="NombreContacto" class="form-control" /></div>
+  <div class="row">
+    <div class="col-md-6 mb-3"><label asp-for="Ciudad" class="form-label">Departamento</label><input asp-for="Ciudad" class="form-control" /></div>
+    <div class="col-md-6 mb-3"><label asp-for="Telefono" class="form-label">Teléfono</label><input asp-for="Telefono" class="form-control" /></div>
+  </div>
+  <div class="mb-3"><label asp-for="Sector" class="form-label">Sector</label><input asp-for="Sector" class="form-control" /></div>
+  <div class="mb-3"><label asp-for="Descripcion" class="form-label">Descripción</label><textarea asp-for="Descripcion" class="form-control" rows="3"></textarea></div>
+  <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Guardar</button>
+  <a asp-action="Perfil" class="btn btn-secondary">Volver</a>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

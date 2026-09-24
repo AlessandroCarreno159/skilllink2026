@@ -1,0 +1,13 @@
+@* Mis notificaciones *@
+@model IEnumerable<SkillLink_dotnet.Models.Notificacion>
+@{ ViewData["Title"] = "Notificaciones"; }
+<h2>Notificaciones</h2>
+@foreach (var n in Model)
+{
+  <div class="card mb-2 @(n.Leida ? "" : "border-primary")"><div class="card-body">
+    <strong>@n.Titulo</strong>
+    <p class="mb-1">@n.Mensaje</p>
+    <small class="text-muted">@n.Fecha.ToLocalTime()</small>
+    @if (!string.IsNullOrEmpty(n.Enlace)) { <a href="@n.Enlace" class="ms-2">Ver</a> }
+  </div></div>
+}

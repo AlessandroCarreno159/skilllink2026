@@ -1,0 +1,13 @@
+bin/
+obj/
+out/
+.git/
+.vs/
+Backups/
+*.db
+*.db-shm
+*.db-wal
+*.sql
+*.log
+*.md
+!README.md

@@ -1,0 +1,26 @@
+@* Perfil público de trabajador *@
+@{ ViewData["Title"] = "Perfil de trabajador"; }
+@inject ImageUploadService Uploads
+@if (ViewBag.Perfil is SkillLink_dotnet.Models.Perfil p)
+{
+  <div class="card mb-3"><div class="card-body">
+    <div class="row g-3 align-items-center">
+      <div class="col-md-3 text-center">
+        <img src="@Uploads.Url(p.Foto)" alt="Foto de perfil" class="img-fluid rounded-circle" style="width:150px;height:150px;object-fit:cover" />
+      </div>
+      <div class="col-md-9">
+        <h4>@p.NombreCompleto</h4>
+        <p class="text-muted">@p.Especialidad · @p.Ciudad · @p.Telefono</p>
+        <p>@p.Descripcion</p>
+        <p><strong>Habilidades:</strong> @p.Habilidades</p>
+        <p><span class="badge bg-secondary">@p.Disponibilidad</span></p>
+      </div>
+    </div>
+  </div></div>
+  <h4>Experiencia laboral</h4>
+  @foreach (var e in (IEnumerable<SkillLink_dotnet.Models.ExperienciaLaboral>)ViewBag.Experiencias)
+  {
+    <div class="card mb-2"><div class="card-body"><strong>@e.CargoOficio</strong> en @e.LugarTrabajo (@e.TiempoTrabajado)<br />@e.DescripcionActividades</div></div>
+  }
+}
+else { <div class="alert alert-warning">Perfil no encontrado.</div> }

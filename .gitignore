@@ -1,0 +1,36 @@
+## .NET
+bin/
+obj/
+out/
+*.user
+*.suo
+.vs/
+TestResults/
+
+## NuGet
+*.nupkg
+*.snupkg
+
+## Logs / temporales
+*.log
+app_run*.log
+
+## Bases de datos y respaldos (contienen datos reales y hashes)
+*.db
+*.db-shm
+*.db-wal
+*.sql
+Backups/
+# Las semillas de wwwroot/uploads YA están commiteadas y siguen viajando.
+# Solo se ignoran los archivos NUEVOS que suban los usuarios:
+wwwroot/uploads/**
+
+## Sesiones y notas con posibles secretos (no subir jamás)
+session-*.md
+Lista1OpenCode.md
+secrets.json
+
+## OS / editores
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,46 @@
+@* Feed laboral: lista de publicaciones con filtros *@
+@model IEnumerable<SkillLink_dotnet.Models.Publicacion>
+@inject ImageUploadService Uploads
+@using SkillLink_dotnet.Services
+@{ ViewData["Title"] = "Feed laboral"; }
+<div class="row">
+  <div class="col-lg-3">
+    <partial name="_FiltrosSidebar" />
+  </div>
+  <div class="col-lg-9">
+    <h2 class="sk-section-title mb-3"><i class="bi bi-briefcase-fill sk-ic-brand"></i> Feed laboral</h2>
+    <div class="feed-list">
+    @if (!Model.Any())
+    {
+      <div class="alert alert-info"><i class="bi bi-info-circle-fill"></i> No hay publicaciones con esos filtros.</div>
+    }
+    @foreach (var p in Model)
+    {
+      <partial name="_PublicacionCard" model="p" />
+    }
+    </div>
+    @{
+      int pagina = ViewBag.Pagina ?? 1;
+      int totalPaginas = ViewBag.TotalPaginas ?? 1;
+    }
+    @if (totalPaginas > 1)
+    {
+      <nav aria-label="Paginación del feed" class="my-4 pb-2">
+        <ul class="pagination justify-content-center">
+          <li class="page-item @(pagina <= 1 ? "disabled" : "")">
+            <a class="page-link" asp-action="Index" asp-route-pagina="@(pagina - 1)" asp-route-q="@ViewBag.Q" asp-route-ciudad="@ViewBag.Ciudad" asp-route-tipo="@ViewBag.Tipo" asp-route-modalidad="@ViewBag.Modalidad" asp-route-categoria="@ViewBag.Categoria" aria-label="Anterior"><span aria-hidden="true">&laquo;</span></a>
+          </li>
+          @for (var i = 1; i <= totalPaginas; i++)
+          {
+            <li class="page-item @(i == pagina ? "active" : "")">
+              <a class="page-link" asp-action="Index" asp-route-pagina="@i" asp-route-q="@ViewBag.Q" asp-route-ciudad="@ViewBag.Ciudad" asp-route-tipo="@ViewBag.Tipo" asp-route-modalidad="@ViewBag.Modalidad" asp-route-categoria="@ViewBag.Categoria">@i</a>
+            </li>
+          }
+          <li class="page-item @(pagina >= totalPaginas ? "disabled" : "")">
+            <a class="page-link" asp-action="Index" asp-route-pagina="@(pagina + 1)" asp-route-q="@ViewBag.Q" asp-route-ciudad="@ViewBag.Ciudad" asp-route-tipo="@ViewBag.Tipo" asp-route-modalidad="@ViewBag.Modalidad" asp-route-categoria="@ViewBag.Categoria" aria-label="Siguiente"><span aria-hidden="true">&raquo;</span></a>
+          </li>
+        </ul>
+      </nav>
+    }
+  </div>
+</div>

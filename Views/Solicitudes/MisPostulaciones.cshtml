@@ -1,0 +1,24 @@
+@* Mis postulaciones (trabajador) *@
+@model List<(SkillLink_dotnet.Models.Solicitud S, SkillLink_dotnet.Models.Publicacion P, string? Razon)>
+@{ ViewData["Title"] = "Mis postulaciones"; }
+<h2>Mis postulaciones</h2>
+<table class="table table-striped">
+  <thead><tr><th>Oferta</th><th>Empresa</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
+  <tbody>
+  @foreach (var (s, p, razon) in Model)
+  {
+    <tr>
+      <td><a asp-controller="Feed" asp-action="Details" asp-route-id="@p.Id">@(p.Titulo ?? $"Oferta #{p.Id}")</a></td>
+      <td>@(razon ?? "—")</td>
+      <td><span class="badge bg-secondary">@s.Estado</span></td>
+      <td>@s.FechaPostulacion.ToLocalTime()</td>
+      <td>
+        <form asp-action="Eliminar" asp-route-id="@s.Id" method="post" class="d-inline">
+          @Html.AntiForgeryToken()
+          <button class="btn btn-sm btn-outline-danger">Eliminar</button>
+        </form>
+      </td>
+    </tr>
+  }
+  </tbody>
+</table>

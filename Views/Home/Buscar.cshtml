@@ -1,0 +1,20 @@
+@* Resultados de búsqueda *@
+@model IEnumerable<SkillLink_dotnet.Models.Publicacion>
+@{ ViewData["Title"] = "Buscar"; }
+<div class="row">
+  <div class="col-lg-3">
+    <partial name="_FiltrosSidebar" />
+  </div>
+  <div class="col-lg-9">
+    <h2 class="sk-section-title"><i class="bi bi-search sk-ic-brand"></i> Resultados de búsqueda</h2>
+    <p class="text-muted">Q: @ViewBag.Q · Ciudad: @ViewBag.Ciudad · Tipo: @ViewBag.Tipo</p>
+    @if (!Model.Any())
+    {
+      <div class="alert alert-info"><i class="bi bi-info-circle-fill"></i> Sin resultados.</div>
+    }
+    @foreach (var p in Model)
+    {
+      <partial name="_PublicacionCard" model="p" />
+    }
+  </div>
+</div>

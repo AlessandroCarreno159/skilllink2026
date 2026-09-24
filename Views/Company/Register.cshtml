@@ -1,0 +1,57 @@
+@* Registrar empresa (completar perfil) *@
+@model SkillLink_dotnet.ViewModels.EmpresaRegistroVm
+@{ ViewData["Title"] = "Completar perfil de empresa"; }
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+    <div class="sk-auth-card">
+      <div class="sk-auth-head">Datos de Empresa/Cliente</div>
+      <div class="sk-auth-body">
+        <form method="post" enctype="multipart/form-data">
+          @Html.AntiForgeryToken()
+          <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+          <div class="mb-3">
+            <label asp-for="NombreContacto" class="form-label">Nombre Completo</label>
+            <input asp-for="NombreContacto" class="form-control sk-auth-input" />
+          </div>
+          <div class="mb-3">
+            <label asp-for="Ruc" class="form-label">RUC</label>
+            <input asp-for="Ruc" class="form-control sk-auth-input" />
+          </div>
+          <div class="mb-3">
+            <label asp-for="RazonSocial" class="form-label">Razón Social</label>
+            <input asp-for="RazonSocial" class="form-control sk-auth-input" />
+            <span asp-validation-for="RazonSocial" class="text-danger"></span>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label asp-for="Telefono" class="form-label">Teléfono</label>
+              <input asp-for="Telefono" class="form-control sk-auth-input" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label asp-for="Ciudad" class="form-label">Departamento</label>
+              <input asp-for="Ciudad" class="form-control sk-auth-input" />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label asp-for="Sector" class="form-label">Sector Social</label>
+            <input asp-for="Sector" class="form-control sk-auth-input" />
+          </div>
+          <div class="mb-3">
+            <label asp-for="Descripcion" class="form-label">Descripción</label>
+            <textarea asp-for="Descripcion" class="form-control sk-auth-input" rows="4"></textarea>
+          </div>
+          <div class="mb-4">
+            <label asp-for="Logo" class="form-label"><i class="bi bi-building-fill"></i> Logo</label>
+            <div class="d-flex gap-2 align-items-center">
+              <div class="sk-foto-box"><i class="bi bi-image-fill"></i></div>
+              <input asp-for="Logo" type="file" class="form-control sk-auth-input" accept="image/*" />
+            </div>
+            <span asp-validation-for="Logo" class="text-danger"></span>
+          </div>
+          <button class="sk-btn-continuar"><i class="bi bi-send-fill"></i> ENVIAR PARA APROBACIÓN</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

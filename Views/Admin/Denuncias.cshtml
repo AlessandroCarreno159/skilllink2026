@@ -1,0 +1,13 @@
+@* Admin: ver denuncias *@
+@model IEnumerable<SkillLink_dotnet.Models.Denuncia>
+@{ ViewData["Title"] = "Denuncias"; }
+<h2>Denuncias</h2>
+<table class="table table-striped">
+  <thead><tr><th>Tipo</th><th>Objeto</th><th>Motivo</th><th>Estado</th><th>Fecha</th></tr></thead>
+  <tbody>
+  @foreach (var d in Model)
+  {
+    <tr><td>@d.ObjetoTipo</td><td>@d.ObjetoId</td><td>@d.Motivo</td><td>@d.Estado</td><td>@d.Fecha.ToLocalTime()</td></tr>
+  }
+  </tbody>
+</table>

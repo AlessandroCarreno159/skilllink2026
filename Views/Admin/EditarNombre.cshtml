@@ -1,0 +1,20 @@
+@* Admin: editar nombre de usuario (nombre completo / razón social) *@
+@model SkillLink_dotnet.Models.ApplicationUser
+@{
+  ViewData["Title"] = "Editar nombre";
+  var actual = Model.Rol == SkillLink_dotnet.Models.Roles.Trabajador
+      ? Model.Perfil?.NombreCompleto
+      : Model.Empresa?.RazonSocial;
+}
+<h2>Editar nombre</h2>
+<p class="text-muted">Usuario: @Model.Dni · Rol: @Model.Rol · Nombre actual: <strong>@(actual ?? "—")</strong></p>
+<form method="post">
+  @Html.AntiForgeryToken()
+  <input type="hidden" name="id" value="@Model.Id" />
+  <div class="mb-3">
+    <label class="form-label" for="nombre">@(Model.Rol == SkillLink_dotnet.Models.Roles.Trabajador ? "Nombre completo" : "Razón social")</label>
+    <input name="nombre" id="nombre" class="form-control" value="@actual" required maxlength="200" />
+  </div>
+  <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Guardar</button>
+  <a asp-action="Usuarios" asp-route-estado="todos" class="btn btn-secondary">Volver</a>
+</form>

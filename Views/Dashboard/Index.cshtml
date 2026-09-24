@@ -1,0 +1,13 @@
+@* Panel principal del usuario *@
+@{ ViewData["Title"] = "Panel"; }
+<h2>Panel</h2>
+<p>Estado de cuenta: <span class="badge bg-info">@ViewBag.Estado</span></p>
+<p>Reputación: <strong>@(((double)ViewBag.RepPromedio).ToString("0.0"))/5</strong> (@ViewBag.RepTotal valoraciones)</p>
+<h4>Mis publicaciones</h4>
+@foreach (var p in (IEnumerable<SkillLink_dotnet.Models.Publicacion>)ViewBag.Pubs)
+{
+  <div class="card mb-2"><div class="card-body">
+    <span class="badge bg-secondary">@p.Tipo</span> <strong>@(p.Titulo ?? "(sin título)")</strong>
+    <a asp-controller="Feed" asp-action="Details" asp-route-id="@p.Id" class="ms-2">Ver</a>
+  </div></div>
+}

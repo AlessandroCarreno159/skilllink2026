@@ -1,0 +1,145 @@
+@* Detalle de publicación con comentarios *@
+@model SkillLink_dotnet.Models.Publicacion
+@inject ImageUploadService Uploads
+@using SkillLink_dotnet.Services
+@{
+  ViewData["Title"] = Model.Titulo ?? "Detalle";
+  var autorUrl = ImageUploadService.PerfilUrl(Model.Autor);
+  var totalComent = (int)(ViewBag.TotalComentarios ?? 0);
+  var rep = ViewBag.Reputacion as SkillLink_dotnet.Models.Reputacion;
+  var email = Model.Autor?.Email ?? "";
+  var telefono = Model.Autor?.Perfil?.Telefono ?? Model.Autor?.Empresa?.Telefono ?? Model.Autor?.PhoneNumber ?? "—";
+  var tags = (Model.HabilidadesReq ?? "").Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+  var comentarios = (IEnumerable<SkillLink_dotnet.Models.ComentarioPublicacion>)ViewBag.Comentarios;
+}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <h2 class="sk-section-title">@(Model.Titulo ?? "(sin título)")</h2>
+    @if (Model.Vacantes.HasValue)
+    {
+      <p class="sk-serif fs-5">@Model.Vacantes vacante(s) disponible(s)</p>
+    }
+    <p class="mb-1"><strong>@(Model.Autor?.Perfil?.Especialidad ?? Model.Autor?.Empresa?.Sector ?? Catalogos.Tipo(Model.Tipo))</strong></p>
+    <div class="sk-author-card p-3 mb-3 d-flex align-items-center gap-2">
+      @if (autorUrl is null)
+      {
+        <img src="@Uploads.Avatar(Model.Autor)" alt="" class="rounded-circle" style="width:48px;height:48px;object-fit:cover" />
+        <strong>@ImageUploadService.NombrePublico(Model.Autor)</strong>
+      }
+      else
+      {
+        <a href="@autorUrl"><img src="@Uploads.Avatar(Model.Autor)" alt="" class="rounded-circle" style="width:48px;height:48px;object-fit:cover" /></a>
+        <a href="@autorUrl" class="text-decoration-none text-dark"><strong>@ImageUploadService.NombrePublico(Model.Autor)</strong></a>
+      }
+    </div>
+    <div class="mb-2">
+      @foreach (var t in tags.Take(6))
+      {
+        <span class="sk-tag">@t</span>
+      }
+      @if (!string.IsNullOrWhiteSpace(Model.Categoria))
+      {
+        <span class="sk-tag">@Catalogos.Categoria(Model.Categoria)</span>
+      }
+    </div>
+    <p class="sk-meta fs-5">
+      <i class="bi bi-star-fill sk-ic-star"></i>
+      @(rep is not null && rep.TotalCalificaciones > 0 ? rep.PromedioEstrellas.ToString("0.0") : "—")
+      <span class="ms-3"><i class="bi bi-geo-alt-fill sk-ic-pin"></i> @Catalogos.Ciudad(Model)</span>
+    </p>
+    <p class="fs-5">@Catalogos.Precio(Model)</p>
+    <p class="mb-1"><strong>Contacto:</strong></p>
+    <p class="sk-meta mb-1"><i class="bi bi-envelope-fill"></i> @email</p>
+    <p class="sk-meta mb-3"><i class="bi bi-telephone-fill"></i> @telefono</p>
+    <div class="d-flex gap-2 flex-wrap mb-3">
+      @if (!string.IsNullOrWhiteSpace(email))
+      {
+        <a class="btn sk-btn-lila btn-sm" href="mailto:@email"><i class="bi bi-send-fill"></i> Enviar mensaje privado</a>
+      }
+      @if (autorUrl is not null)
+      {
+        <a class="btn sk-btn-purple btn-sm" href="@autorUrl"><i class="bi bi-star-fill"></i> Ver reseñas del perfil (@(rep?.TotalCalificaciones ?? 0))</a>
+      }
+    </div>
+    @if (User.IsInRole("admin"))
+    {
+      <form asp-controller="Admin" asp-action="EliminarPublicacion" asp-route-id="@Model.Id" method="post" class="mb-3" onsubmit="return confirm('Eliminar DEFINITIVAMENTE esta publicación?');">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="returnUrl" value="/Feed" />
+        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash-fill"></i> Eliminar publicación</button>
+      </form>
+    }
+    @if (User.IsInRole("trabajador") && Model.Tipo == "oferta")
+    {
+      <form asp-controller="Solicitudes" asp-action="Postular" method="post" class="mb-3">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="publicacionId" value="@Model.Id" />
+        <div class="input-group">
+          <input name="mensaje" class="form-control" placeholder="Mensaje de postulación (opcional)" />
+          <button class="btn btn-success"><i class="bi bi-check-circle-fill"></i> Postular</button>
+        </div>
+      </form>
+    }
+  </div>
+  <div class="col-lg-8">
+    <div class="sk-detail-panel p-4">
+      <div class="row g-4">
+        <div class="col-md-7">
+          <img src="@Uploads.Url(Model.Imagen)" alt="Imagen de la publicación" class="img-fluid rounded" style="width:100%;max-height:320px;object-fit:cover" />
+        </div>
+        <div class="col-md-5">
+          <h5 class="sk-serif"><i class="bi bi-patch-check-fill sk-ic-brand"></i> Experiencia y verificación</h5>
+          <ul class="small">
+            <li>Identidad verificada</li>
+            <li>Perfil verificado</li>
+            <li>@(Model.Autor?.Perfil?.Especialidad ?? Model.Autor?.Empresa?.Sector ?? Catalogos.Tipo(Model.Tipo))</li>
+          </ul>
+        </div>
+      </div>
+      <h5 class="sk-serif mt-4">Descripción:</h5>
+      <p>@Model.Contenido</p>
+      <div class="row small mt-3">
+        <div class="col-md-6"><i class="bi bi-clock-fill sk-ic-brand"></i> <strong>Modalidad:</strong> @Catalogos.Modalidad(Model.Modalidad)</div>
+        <div class="col-md-6"><i class="bi bi-grid-fill sk-ic-brand"></i> <strong>Categoría:</strong> @Catalogos.Categoria(Model.Categoria)</div>
+        <div class="col-md-6"><i class="bi bi-cash-coin sk-ic-cash"></i> <strong>Precio:</strong> @Catalogos.Precio(Model)</div>
+        <div class="col-md-6"><i class="bi bi-calendar3"></i> <strong>Publicado:</strong> @Model.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy")</div>
+      </div>
+    </div>
+  </div>
+</div>
+<button class="sk-btn-comments mt-4" type="button" data-bs-toggle="collapse" data-bs-target="#comentarios" aria-expanded="false" aria-controls="comentarios">
+  <i class="bi bi-chat-dots-fill"></i> Ver comentarios (@totalComent)
+</button>
+<div class="collapse mt-3" id="comentarios">
+  <form asp-action="Comment" asp-route-id="@Model.Id" method="post" class="mb-3">
+    @Html.AntiForgeryToken()
+    <div class="input-group"><input name="comentario" class="form-control" placeholder="Escribe un comentario…" /><button class="btn btn-secondary"><i class="bi bi-send-fill"></i> Comentar</button></div>
+  </form>
+  @foreach (var c in comentarios)
+  {
+    var perfilUrl = ImageUploadService.PerfilUrl(c.Autor);
+    <div class="card mb-2"><div class="card-body d-flex gap-2 align-items-start">
+      @if (perfilUrl is null)
+      {
+        <img src="@Uploads.Avatar(c.Autor)" alt="Foto de perfil" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover" loading="lazy" />
+      }
+      else
+      {
+        <a href="@perfilUrl"><img src="@Uploads.Avatar(c.Autor)" alt="Foto de perfil" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover" loading="lazy" /></a>
+      }
+      <div>
+        @if (perfilUrl is null)
+        {
+          <strong>@ImageUploadService.NombrePublico(c.Autor)</strong>
+        }
+        else
+        {
+          <a href="@perfilUrl" class="text-decoration-none"><strong>@ImageUploadService.NombrePublico(c.Autor)</strong></a>
+        }
+        <br />
+        @c.Comentario<br />
+        <small class="text-muted">@c.Fecha.ToLocalTime()</small>
+      </div>
+    </div></div>
+  }
+</div>

@@ -1,0 +1,34 @@
+@* Admin: moderar usuarios (aprobar, rechazar, suspender, banear, editar nombre) *@
+@model IEnumerable<SkillLink_dotnet.Models.ApplicationUser>
+@{ ViewData["Title"] = "Usuarios"; }
+<h2>Usuarios (@ViewBag.Estado)</h2>
+<p>
+  <a asp-action="Usuarios" asp-route-estado="pendiente">Pendientes</a> |
+  <a asp-action="Usuarios" asp-route-estado="aprobado">Aprobados</a> |
+  <a asp-action="Usuarios" asp-route-estado="todos">Todos</a>
+</p>
+<table class="table table-striped">
+  <thead><tr><th>DNI</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+  <tbody>
+  @foreach (var u in Model)
+  {
+    <tr>
+      <td>@u.Dni</td>
+      <td>@SkillLink_dotnet.Services.ImageUploadService.NombrePublico(u)</td>
+      <td>@u.Email</td><td>@u.Rol</td>
+      <td><span class="badge bg-secondary">@u.EstadoCuenta</span></td>
+      <td>
+        <a asp-action="EditarNombre" asp-route-id="@u.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Nombre</a>
+        <form asp-action="Gestionar" method="post" class="d-inline">
+          @Html.AntiForgeryToken()
+          <input type="hidden" name="id" value="@u.Id" />
+          <button name="accion" value="aprobar" class="btn btn-sm btn-success">Aprobar</button>
+          <button name="accion" value="rechazar" class="btn btn-sm btn-warning">Rechazar</button>
+          <button name="accion" value="suspender" class="btn btn-sm btn-secondary">Suspender</button>
+          <button name="accion" value="banear" class="btn btn-sm btn-danger">Banear</button>
+        </form>
+      </td>
+    </tr>
+  }
+  </tbody>
+</table>

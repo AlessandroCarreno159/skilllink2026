@@ -1,0 +1,50 @@
+@* Parcial: barra lateral de filtros del feed *@
+@using SkillLink_dotnet.Services
+@{
+  string? q = ViewBag.Q, ciudad = ViewBag.Ciudad, tipo = ViewBag.Tipo;
+  string? modalidad = ViewBag.Modalidad, categoria = ViewBag.Categoria;
+  var action = ViewContext.RouteData.Values["action"]?.ToString();
+  var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+}
+<aside class="sk-sidebar mb-3">
+  <form method="get" class="mb-3">
+    <div class="input-group mb-2">
+      <span class="input-group-text sk-auth-input"><i class="bi bi-search"></i></span>
+      <input name="q" value="@q" class="form-control sk-auth-input" placeholder="Buscar…" />
+    </div>
+    <div class="input-group mb-2">
+      <span class="input-group-text sk-auth-input"><i class="bi bi-geo-alt"></i></span>
+      <input name="ciudad" value="@ciudad" class="form-control sk-auth-input" placeholder="Departamento" />
+    </div>
+    @if (!string.IsNullOrWhiteSpace(tipo)) { <input type="hidden" name="tipo" value="@tipo" /> }
+    @if (!string.IsNullOrWhiteSpace(modalidad)) { <input type="hidden" name="modalidad" value="@modalidad" /> }
+    @if (!string.IsNullOrWhiteSpace(categoria)) { <input type="hidden" name="categoria" value="@categoria" /> }
+    <button class="btn btn-secondary btn-sm w-100"><i class="bi bi-funnel-fill"></i> Filtrar</button>
+  </form>
+  <a class="btn sk-btn-continuar btn-sm mb-2" asp-controller="Feed" asp-action="Create"><i class="bi bi-plus-circle-fill"></i> Nueva publicación</a>
+  <h5><i class="bi bi-funnel-fill"></i> Filtros</h5>
+  <p class="sk-filter-title"><i class="bi bi-geo-alt-fill sk-ic-pin"></i> Ubicación</p>
+  <ul class="sk-filter-list">
+    @foreach (var u in new[] { "Arequipa", "Trujillo", "Lima" })
+    {
+      <li><a asp-controller="@controller" asp-action="@action" asp-route-q="@q" asp-route-ciudad="@u" asp-route-tipo="@tipo" asp-route-modalidad="@modalidad" asp-route-categoria="@categoria" class="@(ciudad == u ? "active" : "")">@u</a></li>
+    }
+    <li><a asp-controller="@controller" asp-action="@action" asp-route-q="@q" asp-route-tipo="@tipo" asp-route-modalidad="@modalidad" asp-route-categoria="@categoria" class="@(string.IsNullOrWhiteSpace(ciudad) ? "active" : "")">Todas</a></li>
+  </ul>
+  <p class="sk-filter-title"><i class="bi bi-clock-fill sk-ic-brand"></i> Tipo de trabajo</p>
+  <ul class="sk-filter-list">
+    @foreach (var kv in Catalogos.Modalidades)
+    {
+      <li><a asp-controller="@controller" asp-action="@action" asp-route-q="@q" asp-route-ciudad="@ciudad" asp-route-tipo="@tipo" asp-route-modalidad="@kv.Key" asp-route-categoria="@categoria" class="@(modalidad == kv.Key ? "active" : "")">@kv.Value</a></li>
+    }
+    <li><a asp-controller="@controller" asp-action="@action" asp-route-q="@q" asp-route-ciudad="@ciudad" asp-route-tipo="@tipo" asp-route-categoria="@categoria" class="@(string.IsNullOrWhiteSpace(modalidad) ? "active" : "")">Todos</a></li>
+  </ul>
+  <p class="sk-filter-title"><i class="bi bi-grid-fill sk-ic-brand"></i> Categoría</p>
+  <ul class="sk-filter-list">
+    @foreach (var kv in Catalogos.Categorias)
+    {
+      <li><a asp-controller="@controller" asp-action="@action" asp-route-q="@q" asp-route-ciudad="@ciudad" asp-route-tipo="@tipo" asp-route-modalidad="@modalidad" asp-route-categoria="@kv.Key" class="@(categoria == kv.Key ? "active" : "")">@kv.Value</a></li>
+    }
+    <li><a asp-controller="@controller" asp-action="@action" asp-route-q="@q" asp-route-ciudad="@ciudad" asp-route-tipo="@tipo" asp-route-modalidad="@modalidad" class="@(string.IsNullOrWhiteSpace(categoria) ? "active" : "")">Todas</a></li>
+  </ul>
+</aside>

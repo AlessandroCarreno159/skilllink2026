@@ -1,0 +1,60 @@
+@* Crear Publicaciones *@
+@model SkillLink_dotnet.ViewModels.PublicacionCreateVm
+@using SkillLink_dotnet.Services
+@{ ViewData["Title"] = "Nueva publicación"; }
+<h2 class="sk-section-title"><i class="bi bi-plus-circle-fill sk-ic-brand"></i> Nueva publicación</h2>
+<div class="sk-auth-card mt-3">
+  <div class="sk-auth-body">
+    <form asp-action="Create" method="post" enctype="multipart/form-data">
+      @Html.AntiForgeryToken()
+      <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label asp-for="Tipo" class="form-label">Tipo</label>
+          <select asp-for="Tipo" class="form-select sk-auth-input">
+            @foreach (var kv in Catalogos.Tipos)
+            {
+              <option value="@kv.Key">@kv.Value</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label asp-for="Categoria" class="form-label">Categoría</label>
+          <select asp-for="Categoria" class="form-select sk-auth-input">
+            <option value="">General</option>
+            @foreach (var kv in Catalogos.Categorias)
+            {
+              <option value="@kv.Key">@kv.Value</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label asp-for="Modalidad" class="form-label">Tipo de trabajo</label>
+          <select asp-for="Modalidad" class="form-select sk-auth-input">
+            <option value="">—</option>
+            @foreach (var kv in Catalogos.Modalidades)
+            {
+              <option value="@kv.Key">@kv.Value</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-3 mb-3">
+          <label asp-for="PrecioTexto" class="form-label">Precio (ej. S/ 80 - S/ 150)</label>
+          <input asp-for="PrecioTexto" class="form-control sk-auth-input" placeholder="A convenir"/>
+        </div>
+        <div class="col-md-3 mb-3">
+          <label asp-for="Vacantes" class="form-label">Vacantes</label>
+          <input asp-for="Vacantes" type="number" min="1" class="form-control sk-auth-input" placeholder="Sin Vacantes"/>
+        </div>
+      </div>
+      <div class="mb-3"><label asp-for="Titulo" class="form-label">Título</label><input asp-for="Titulo" class="form-control sk-auth-input" /></div>
+      <div class="mb-3"><label asp-for="Contenido" class="form-label">Contenido</label><textarea asp-for="Contenido" class="form-control sk-auth-input" rows="4"></textarea><span asp-validation-for="Contenido" class="text-danger"></span></div>
+      <div class="mb-3"><label asp-for="HabilidadesReq" class="form-label">Habilidades requeridas (separadas por comas)</label><input asp-for="HabilidadesReq" class="form-control sk-auth-input" /></div>
+      <div class="mb-3"><label asp-for="Imagen" class="form-label">Imagen (opcional, JPG/PNG/WebP hasta 5 MB)</label><input asp-for="Imagen" type="file" class="form-control sk-auth-input" accept="image/*" /><span asp-validation-for="Imagen" class="text-danger"></span></div>
+      <button class="sk-btn-continuar" style="max-width:280px"><i class="bi bi-send-fill"></i> Publicar</button>
+    </form>
+  </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

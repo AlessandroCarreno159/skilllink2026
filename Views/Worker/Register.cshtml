@@ -1,0 +1,77 @@
+@* Completar perfil de trabajador (registro) *@
+@model SkillLink_dotnet.ViewModels.TrabajadorRegistroVm
+@{ ViewData["Title"] = "Completar perfil de trabajador"; }
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+    <div class="sk-auth-card">
+      <div class="sk-auth-head">Crear Cuenta Perfil Trabajador</div>
+      <div class="sk-auth-body">
+        <form method="post" enctype="multipart/form-data">
+          @Html.AntiForgeryToken()
+          <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+          <div class="mb-3">
+            <label asp-for="NombreCompleto" class="form-label">Nombre Completo</label>
+            <input asp-for="NombreCompleto" class="form-control sk-auth-input" />
+            <span asp-validation-for="NombreCompleto" class="text-danger"></span>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label asp-for="Telefono" class="form-label">Teléfono</label>
+              <input asp-for="Telefono" class="form-control sk-auth-input" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label asp-for="Ciudad" class="form-label">Departamento</label>
+              <input asp-for="Ciudad" class="form-control sk-auth-input" />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label asp-for="Especialidad" class="form-label">Especialidad/Oficio</label>
+            <input asp-for="Especialidad" class="form-control sk-auth-input" />
+          </div>
+          <div class="mb-3">
+            <label asp-for="Descripcion" class="form-label">Descripción Personal</label>
+            <textarea asp-for="Descripcion" class="form-control sk-auth-input" rows="2"></textarea>
+          </div>
+          <div class="mb-3">
+            <label asp-for="Habilidades" class="form-label">Habilidades Técnicas</label>
+            <input asp-for="Habilidades" class="form-control sk-auth-input" />
+          </div>
+          <div class="mb-3">
+            <label asp-for="DocumentoExperiencia" class="form-label"><i class="bi bi-file-earmark-check-fill"></i> Documentación de Acreditación de Experiencia</label>
+            <input asp-for="DocumentoExperiencia" type="file" class="form-control sk-auth-input" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+            <span asp-validation-for="DocumentoExperiencia" class="text-danger"></span>
+          </div>
+          <div class="row align-items-end">
+            <div class="col-md-6 mb-3">
+              <label asp-for="Foto" class="form-label"><i class="bi bi-card-image"></i> Foto</label>
+              <div class="d-flex gap-2 align-items-center">
+                <div class="sk-foto-box"><i class="bi bi-person-fill"></i></div>
+                <input asp-for="Foto" type="file" class="form-control sk-auth-input" accept="image/*" />
+              </div>
+              <span asp-validation-for="Foto" class="text-danger"></span>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label asp-for="Disponibilidad" class="form-label">Disponibilidad</label>
+              <select asp-for="Disponibilidad" class="form-select sk-auth-input">
+                <option value="disponible">Disponible</option>
+                <option value="ocupado">Ocupado</option>
+                <option value="fines_de_semana">Fines de semana</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-check mb-2">
+            <input asp-for="TieneAntecedentes" class="form-check-input" />
+            <label asp-for="TieneAntecedentes" class="form-check-label">Tengo antecedentes</label>
+          </div>
+          <div class="mb-4">
+            <label asp-for="DeclaracionAntecedentes" class="form-label">Declaración (obligatoria)</label>
+            <textarea asp-for="DeclaracionAntecedentes" class="form-control sk-auth-input" rows="2"></textarea>
+            <span asp-validation-for="DeclaracionAntecedentes" class="text-danger"></span>
+          </div>
+          <button class="sk-btn-continuar"><i class="bi bi-send-fill"></i> ENVIAR PARA APROBACIÓN</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
