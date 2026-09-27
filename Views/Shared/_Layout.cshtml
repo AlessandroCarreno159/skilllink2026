@@ -59,7 +59,7 @@
                             @if (User.IsInRole("trabajador"))
                             {
                                 <li class="nav-item d-flex align-items-center">
-                                    <a class="nav-link" asp-controller="Worker" asp-action="Perfil" title="Mi perfil">
+                                    <a class="nav-link" asp-controller="Worker" asp-action="MiPerfil" title="Mi perfil">
                                         <i class="bi bi-person-circle"></i>
                                     </a>
                                 </li>
@@ -67,7 +67,7 @@
                             else if (User.IsInRole("empresa"))
                             {
                                 <li class="nav-item d-flex align-items-center">
-                                    <a class="nav-link" asp-controller="Company" asp-action="Perfil" title="Mi perfil">
+                                    <a class="nav-link" asp-controller="Company" asp-action="MiEmpresa" title="Mi perfil">
                                         <i class="bi bi-person-circle"></i>
                                     </a>
                                 </li>
