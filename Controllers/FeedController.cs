@@ -14,7 +14,7 @@ namespace SkillLink_dotnet.Controllers;
 public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser> users, ImageUploadService uploads) : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> Index(string? seccion = "laboral", string? tipo = null, string? q = null, string? ciudad = null, string? modalidad = null, string? categoria = null, int pagina = 1)
+    public async Task<IActionResult> Index(string? seccion = "laboral", string? tipo = null, string? q = null, string? ciudad = null, string? modalidad = null, string? categoria = null, int? estrellas = null, string? opCalif = ">=", int pagina = 1)
     {
         var query = db.Publicaciones
             .Include(p => p.Autor).ThenInclude(a => a!.Perfil)
@@ -30,6 +30,24 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             query = query.Where(p => p.Modalidad == modalidad);
         if (!string.IsNullOrWhiteSpace(categoria))
             query = query.Where(p => p.Categoria == categoria);
+        if (estrellas is >= 1 and <= 5)
+        {
+            var op = opCalif is "<=" or "=" or ">=" ? opCalif : ">=";
+            var e = estrellas.Value;
+            var promedios = db.Valoraciones
+                .Where(v => v.PublicacionId != null && v.Activo && v.Calificacion != null)
+                .GroupBy(v => v.PublicacionId!.Value)
+                .Select(g => new { Id = g.Key, Prom = g.Average(v => v.Calificacion!.Value) });
+            promedios = op switch
+            {
+                "<=" => promedios.Where(x => x.Prom <= e),
+                "=" => e >= 5
+                    ? promedios.Where(x => x.Prom == 5)
+                    : promedios.Where(x => x.Prom >= e && x.Prom < e + 1),
+                _ => promedios.Where(x => x.Prom >= e),
+            };
+            query = query.Where(p => promedios.Select(x => x.Id).Contains(p.Id));
+        }
         const int porPagina = 10;
         var total = await query.CountAsync();
         var totalPaginas = Math.Max(1, (int)Math.Ceiling(total / (double)porPagina));
@@ -50,6 +68,8 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             .ToDictionaryAsync(x => x.PublicacionId, x => (Promedio: x.Promedio, Total: x.Total));
         ViewBag.Seccion = seccion; ViewBag.Q = q; ViewBag.Ciudad = ciudad; ViewBag.Tipo = tipo;
         ViewBag.Modalidad = modalidad; ViewBag.Categoria = categoria;
+        ViewBag.Estrellas = estrellas is >= 1 and <= 5 ? estrellas : null;
+        ViewBag.OpCalif = opCalif is "<=" or "=" or ">=" ? opCalif : ">=";
         ViewBag.Pagina = pagina; ViewBag.TotalPaginas = totalPaginas; ViewBag.Total = total;
         return View(pubs);
     }
