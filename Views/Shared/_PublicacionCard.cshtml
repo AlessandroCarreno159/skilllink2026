@@ -4,10 +4,10 @@
 @using SkillLink_dotnet.Services
 @{
   var counts = ViewBag.CommentsCount as Dictionary<int, int>;
-  var reps = ViewBag.Rep as Dictionary<string, SkillLink_dotnet.Models.Reputacion>;
+  var ratings = ViewBag.Ratings as Dictionary<int, (double Promedio, int Total)>;
   var nComent = counts is not null && counts.TryGetValue(Model.Id, out var cc) ? cc : 0;
-  SkillLink_dotnet.Models.Reputacion? rep = null;
-  reps?.TryGetValue(Model.AutorId, out rep);
+  (double Promedio, int Total)? rating = null;
+  if (ratings is not null && ratings.TryGetValue(Model.Id, out var rt)) rating = rt;
   var autorUrl = ImageUploadService.PerfilUrl(Model.Autor);
   var oficio = Model.Autor?.Perfil?.Especialidad ?? Model.Autor?.Empresa?.Sector;
 }
@@ -36,9 +36,9 @@
         {
           <p class="mb-1"><strong>@oficio</strong></p>
         }
-        @if (rep is not null && rep.TotalCalificaciones > 0)
+        @if (rating.HasValue && rating.Value.Total > 0)
         {
-          <p class="sk-meta"><i class="bi bi-star-fill sk-ic-star"></i> @rep.PromedioEstrellas.ToString("0.0") · @rep.TotalCalificaciones reseñas</p>
+          <p class="sk-meta"><i class="bi bi-star-fill sk-ic-star"></i> @rating.Value.Promedio.ToString("0.0") · @rating.Value.Total calificación(es)</p>
         }
         <p class="sk-meta"><i class="bi bi-geo-alt-fill sk-ic-pin"></i> @Catalogos.Ciudad(Model)</p>
         <p class="sk-meta"><i class="bi bi-cash-coin sk-ic-cash"></i> @Catalogos.Precio(Model)</p>

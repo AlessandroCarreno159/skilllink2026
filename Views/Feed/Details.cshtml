@@ -6,7 +6,9 @@
   ViewData["Title"] = Model.Titulo ?? "Detalle";
   var autorUrl = ImageUploadService.PerfilUrl(Model.Autor);
   var totalComent = (int)(ViewBag.TotalComentarios ?? 0);
-  var rep = ViewBag.Reputacion as SkillLink_dotnet.Models.Reputacion;
+  var ratingProm = (double)(ViewBag.RatingPromedio ?? 0);
+  var ratingTotal = (int)(ViewBag.RatingTotal ?? 0);
+  var miVoto = (int?)(ViewBag.MiCalificacion as int?);
   var email = Model.Autor?.Email ?? "";
   var telefono = Model.Autor?.Perfil?.Telefono ?? Model.Autor?.Empresa?.Telefono ?? Model.Autor?.PhoneNumber ?? "—";
   var tags = (Model.HabilidadesReq ?? "").Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -44,21 +46,36 @@
     </div>
     <p class="sk-meta fs-5">
       <i class="bi bi-star-fill sk-ic-star"></i>
-      @(rep is not null && rep.TotalCalificaciones > 0 ? rep.PromedioEstrellas.ToString("0.0") : "—")
+      @(ratingTotal > 0 ? ratingProm.ToString("0.0") + $" · {ratingTotal} calificación(es)" : "Sin calificaciones")
       <span class="ms-3"><i class="bi bi-geo-alt-fill sk-ic-pin"></i> @Catalogos.Ciudad(Model)</span>
     </p>
     <p class="fs-5">@Catalogos.Precio(Model)</p>
     <p class="mb-1"><strong>Contacto:</strong></p>
     <p class="sk-meta mb-1"><i class="bi bi-envelope-fill"></i> @email</p>
     <p class="sk-meta mb-3"><i class="bi bi-telephone-fill"></i> @telefono</p>
-    <div class="d-flex gap-2 flex-wrap mb-3">
-      @if (!string.IsNullOrWhiteSpace(email))
+    <div class="card p-3 mb-3">
+      <h6 class="sk-serif mb-2"><i class="bi bi-star-fill sk-ic-star"></i> Dejar calificación</h6>
+      @if (miVoto.HasValue)
       {
-        <a class="btn sk-btn-lila btn-sm" href="mailto:@email"><i class="bi bi-send-fill"></i> Enviar mensaje privado</a>
+        <p class="sk-meta mb-2">Tu voto: <strong>@miVoto / 5</strong> (puedes actualizarlo)</p>
       }
-      @if (autorUrl is not null)
+      @if (User.Identity?.IsAuthenticated == true)
       {
-        <a class="btn sk-btn-purple btn-sm" href="@autorUrl"><i class="bi bi-star-fill"></i> Ver reseñas del perfil (@(rep?.TotalCalificaciones ?? 0))</a>
+        <form asp-controller="Feed" asp-action="Calificar" asp-route-id="@Model.Id" method="post" class="d-flex align-items-center gap-2 flex-wrap">
+          @Html.AntiForgeryToken()
+          <div class="btn-group" role="group" aria-label="Estrellas">
+            @for (var s = 1; s <= 5; s++)
+            {
+              <input type="radio" class="btn-check" name="calificacion" id="star-@s" value="@s" @(miVoto == s ? "checked" : "") required />
+              <label class="btn btn-sm @(miVoto.HasValue && miVoto >= s ? "btn-warning" : "btn-outline-warning")" for="star-@s">@s ★</label>
+            }
+          </div>
+          <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-check-circle-fill"></i> @(miVoto.HasValue ? "Actualizar" : "Calificar")</button>
+        </form>
+      }
+      else
+      {
+        <p class="sk-meta mb-0"><a asp-controller="Account" asp-action="Login">Inicia sesión</a> para calificar esta publicación.</p>
       }
     </div>
     @if (User.IsInRole("admin"))
