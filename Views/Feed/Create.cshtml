@@ -41,8 +41,16 @@
           </select>
         </div>
         <div class="col-md-3 mb-3">
-          <label asp-for="PrecioTexto" class="form-label">Precio (ej. S/ 80 - S/ 150)</label>
-          <input asp-for="PrecioTexto" class="form-control sk-auth-input" placeholder="A convenir"/>
+          <label class="form-label" for="precioMin">Precio mín. (S/)</label>
+          <input id="precioMin" inputmode="decimal" autocomplete="off" class="form-control sk-auth-input" placeholder="90" />
+          <small class="text-muted">Solo números, coma decimal. Enter ↵ pasa al máximo.</small>
+        </div>
+        <div class="col-md-3 mb-3">
+          <label class="form-label" for="precioMax">Precio máx. (S/)</label>
+          <input id="precioMax" inputmode="decimal" autocomplete="off" class="form-control sk-auth-input" placeholder="180" />
+          <small class="text-muted">Vacío = precio único: S/90. Enter ↵ compone el rango.</small>
+          <input type="hidden" asp-for="PrecioTexto" id="precioTexto" />
+          <span asp-validation-for="PrecioTexto" class="text-danger"></span>
         </div>
         <div class="col-md-3 mb-3">
           <label asp-for="Vacantes" class="form-label">Vacantes</label>
@@ -52,7 +60,7 @@
       <div class="mb-3"><label asp-for="Titulo" class="form-label">Título</label><input asp-for="Titulo" class="form-control sk-auth-input" /></div>
       <div class="mb-3"><label asp-for="Contenido" class="form-label">Contenido</label><textarea asp-for="Contenido" class="form-control sk-auth-input" rows="4"></textarea><span asp-validation-for="Contenido" class="text-danger"></span></div>
       <div class="mb-3"><label asp-for="HabilidadesReq" class="form-label">Habilidades requeridas (separadas por comas)</label><input asp-for="HabilidadesReq" class="form-control sk-auth-input" /></div>
-      <div class="mb-3"><label asp-for="Imagen" class="form-label">Imagen (opcional, JPG/PNG/WebP hasta 5 MB)</label><input asp-for="Imagen" type="file" class="form-control sk-auth-input" accept="image/*" /><span asp-validation-for="Imagen" class="text-danger"></span></div>
+      <div class="mb-3"><label asp-for="Imagen" class="form-label">Imagen (opcional, JPG/PNG/WebP hasta 5 MB)</label><input asp-for="Imagen" type="file" class="form-control sk-auth-input sk-file-es" accept="image/*" /><span asp-validation-for="Imagen" class="text-danger"></span></div>
       <button class="sk-btn-continuar" style="max-width:280px"><i class="bi bi-send-fill"></i> Publicar</button>
     </form>
   </div>

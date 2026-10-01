@@ -67,7 +67,7 @@
             @for (var s = 1; s <= 5; s++)
             {
               <input type="radio" class="btn-check" name="calificacion" id="star-@s" value="@s" @(miVoto == s ? "checked" : "") required />
-              <label class="btn btn-sm @(miVoto.HasValue && miVoto >= s ? "btn-warning" : "btn-outline-warning")" for="star-@s">@s ★</label>
+              <label class="btn btn-sm sk-star-btn" for="star-@s">@s ★</label>
             }
           </div>
           <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-check-circle-fill"></i> @(miVoto.HasValue ? "Actualizar" : "Calificar")</button>
@@ -75,7 +75,7 @@
       }
       else
       {
-        <p class="sk-meta mb-0"><a asp-controller="Account" asp-action="Login">Inicia sesión</a> para calificar esta publicación.</p>
+        <p class="sk-meta mb-0"><a asp-controller="Account" asp-action="Login">Iniciar sesión</a> para calificar esta publicación.</p>
       }
     </div>
     @if (User.IsInRole("admin"))
@@ -135,7 +135,7 @@
   @foreach (var c in comentarios)
   {
     var perfilUrl = ImageUploadService.PerfilUrl(c.Autor);
-    <div class="card mb-2"><div class="card-body d-flex gap-2 align-items-start">
+    <div class="card mb-2 sk-item"><div class="card-body d-flex gap-2 align-items-start">
       @if (perfilUrl is null)
       {
         <img src="@Uploads.Avatar(c.Autor)" alt="Foto de perfil" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover" loading="lazy" />

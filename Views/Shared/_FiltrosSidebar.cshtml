@@ -15,13 +15,14 @@
     @if (!string.IsNullOrWhiteSpace(tipo)) { <input type="hidden" name="tipo" value="@tipo" /> }
     <a class="btn sk-btn-continuar btn-sm mb-2" asp-controller="Feed" asp-action="Create"><i class="bi bi-plus-circle-fill"></i> Nueva publicación</a>
     <h5><i class="bi bi-funnel-fill"></i> Filtros</h5>
+    <button class="btn btn-secondary btn-sm w-100 mb-2" type="submit"><i class="bi bi-funnel-fill"></i> Filtrar</button>
 
     <button class="sk-filter-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#fUbicacion" aria-expanded="true" aria-controls="fUbicacion">
       <span><i class="bi bi-geo-alt-fill sk-ic-pin"></i> Ubicación</span><i class="bi bi-chevron-down"></i>
     </button>
     <div class="collapse show" id="fUbicacion">
       <ul class="sk-filter-list">
-        @foreach (var u in new[] { "Arequipa", "Trujillo", "Lima" })
+        @foreach (var u in new[] { "Arequipa", "Lima" })
         {
           <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="ciudad" value="@u" checked="@(ciudad == u)" /><span>@u</span></label></li>
         }
@@ -68,21 +69,21 @@
           @for (var s = 1; s <= 5; s++)
           {
             <input type="radio" class="btn-check" name="estrellas" id="f-star-@s" value="@s" checked="@(estrellas == s)" />
-            <label class="btn @(estrellas.HasValue && estrellas >= s ? "btn-warning" : "btn-outline-warning")" for="f-star-@s">@s ★</label>
+            <label class="btn btn-sm sk-star-btn" for="f-star-@s">@s ★</label>
           }
         </div>
       </div>
-      <select name="opCalif" class="form-select form-select-sm mt-2" title="Comparador de calificación">
-        <option value="<=" selected="@(opCalif == "<=")">Menor o igual que</option>
-        <option value="=" selected="@(opCalif == "=")">Igual que</option>
-        <option value=">=" selected="@(opCalif == ">=")">Mayor o igual que</option>
-      </select>
+      <ul class="sk-filter-list">
+        @foreach (var kv in new[] { new KeyValuePair<string, string>(">=", "Mayor o igual que"), new KeyValuePair<string, string>("=", "Igual que"), new KeyValuePair<string, string>("<=", "Menor o igual que") })
+        {
+          <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="opCalif" value="@kv.Key" checked="@(opCalif == kv.Key)" /><span>@kv.Value</span></label></li>
+        }
+      </ul>
       @if (estrellas.HasValue)
       {
         <button type="button" class="btn btn-sm btn-link p-0 mt-1" onclick="document.querySelectorAll('#fCalif input[name=estrellas]').forEach(r=>r.checked=false)">Quitar selección</button>
       }
     </div>
 
-    <button class="btn btn-secondary btn-sm w-100 mt-3" type="submit"><i class="bi bi-funnel-fill"></i> Filtrar</button>
   </form>
 </aside>

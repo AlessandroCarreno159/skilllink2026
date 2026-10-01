@@ -3,7 +3,7 @@
 @inject ImageUploadService Uploads
 @if (ViewBag.Empresa is SkillLink_dotnet.Models.Empresa e)
 {
-  <div class="card mb-3"><div class="card-body">
+  <div class="card mb-3 sk-perfil"><div class="card-body">
     <div class="row g-3 align-items-center">
       <div class="col-md-3 text-center">
         <img src="@Uploads.Url(e.Logo)" alt="Logo de la empresa" class="img-fluid rounded" style="width:150px;height:150px;object-fit:cover" />
@@ -15,10 +15,10 @@
       </div>
     </div>
   </div></div>
-  <h4>Últimas ofertas</h4>
+  <h4 class="sk-section-title">Últimas ofertas</h4>
   @foreach (var o in (IEnumerable<SkillLink_dotnet.Models.Publicacion>)ViewBag.Ofertas)
   {
-    <div class="card mb-2"><div class="card-body">
+    <div class="card mb-2 sk-item"><div class="card-body">
       <span class="sk-badge-tipo">@o.Tipo</span>
       <a asp-controller="Feed" asp-action="Details" asp-route-id="@o.Id" class="ms-2">@(o.Titulo ?? "(sin título)")</a>
     </div></div>
@@ -31,7 +31,7 @@
     {
       @foreach (var d in docs)
       {
-        <div class="card mb-2"><div class="card-body py-2">
+        <div class="card mb-2 sk-item"><div class="card-body py-2">
           <i class="bi bi-file-earmark-check"></i>
           <a href="~/uploads/@d.Archivo" target="_blank">@(d.NombreOriginal ?? d.Archivo)</a>
           <small class="text-muted">· @d.FechaSubida.ToLocalTime()</small>
@@ -48,4 +48,4 @@
     <a asp-controller="Company" asp-action="Perfil" class="btn sk-btn-purple btn-lg w-100 mt-4"><i class="bi bi-pencil"></i> Editar perfil</a>
   }
 }
-else { <div class="alert alert-warning">Empresa no encontrada.</div> }
+else { <div class="alert alert-warning sk-toast sk-toast-warn" role="status"><i class="bi bi-exclamation-triangle-fill"></i> Empresa no encontrada.</div> }
