@@ -10,7 +10,7 @@
     <p class="text-muted">Q: @ViewBag.Q · Ciudad: @ViewBag.Ciudad · Tipo: @ViewBag.Tipo</p>
     @if (!Model.Any())
     {
-      <div class="alert alert-info"><i class="bi bi-info-circle-fill"></i> Sin resultados.</div>
+      <div class="alert alert-info sk-toast sk-toast-info" role="status"><i class="bi bi-info-circle-fill"></i> Sin resultados.</div>
     }
     @foreach (var p in Model)
     {

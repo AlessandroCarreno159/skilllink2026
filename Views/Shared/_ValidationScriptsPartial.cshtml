@@ -1,3 +1,20 @@
 ﻿@* Parcial: scripts de validación de formularios *@
 <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
 <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+<script>
+  // Mensajes en español (el paquete no trae localización).
+  if (window.jQuery && jQuery.validator) {
+    jQuery.extend(jQuery.validator.messages, {
+      required: "Este campo es obligatorio.",
+      email: "Ingrese un correo válido.",
+      number: "Ingrese un número válido.",
+      digits: "Ingrese solo dígitos.",
+      minlength: jQuery.validator.format("Ingrese al menos {0} caracteres."),
+      maxlength: jQuery.validator.format("Ingrese como máximo {0} caracteres."),
+      rangelength: jQuery.validator.format("Ingrese entre {0} y {1} caracteres."),
+      min: jQuery.validator.format("Ingrese un valor mayor o igual a {0}."),
+      max: jQuery.validator.format("Ingrese un valor menor o igual a {0}."),
+      range: jQuery.validator.format("Ingrese un valor entre {0} y {1}.")
+    });
+  }
+</script>

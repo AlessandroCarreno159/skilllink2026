@@ -54,5 +54,17 @@ public static class Catalogos
         => p.Autor?.Perfil?.Ciudad ?? p.Autor?.Empresa?.Ciudad ?? "—";
 
     public static string Precio(Publicacion p)
-        => string.IsNullOrWhiteSpace(p.PrecioTexto) ? "A convenir" : p.PrecioTexto!;
+        => NormalizarPrecio(p.PrecioTexto);
+
+    /// <summary>Normaliza a S/90 | S/90 - S/180 (coma decimal). Lo no reconocido se muestra tal cual.</summary>
+    public static string NormalizarPrecio(string? v)
+    {
+        if (string.IsNullOrWhiteSpace(v)) return "A convenir";
+        var t = System.Text.RegularExpressions.Regex.Replace(v.Trim(), @"\s+", " ");
+        t = System.Text.RegularExpressions.Regex.Replace(t, @"S/\s+", "S/");
+        t = System.Text.RegularExpressions.Regex.Replace(t, @"\s*-\s*", " - ");
+        var m = System.Text.RegularExpressions.Regex.Match(t, @"^(\d+(,\d+)?)\s*(?:-\s*S?/?\s*(\d+(,\d+)?))?$");
+        if (!m.Success) return t;
+        return string.IsNullOrEmpty(m.Groups[3].Value) ? $"S/{m.Groups[1].Value}" : $"S/{m.Groups[1].Value} - S/{m.Groups[3].Value}";
+    }
 }

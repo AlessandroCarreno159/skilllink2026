@@ -38,7 +38,7 @@
           </div>
           <div class="mb-3">
             <label asp-for="DocumentoExperiencia" class="form-label"><i class="bi bi-file-earmark-check-fill"></i> Documentación de Acreditación de Experiencia</label>
-            <input asp-for="DocumentoExperiencia" type="file" class="form-control sk-auth-input" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+            <input asp-for="DocumentoExperiencia" type="file" class="form-control sk-auth-input sk-file-es" accept=".pdf,.jpg,.jpeg,.png,.webp" />
             <span asp-validation-for="DocumentoExperiencia" class="text-danger"></span>
           </div>
           <div class="row align-items-end">
@@ -46,7 +46,7 @@
               <label asp-for="Foto" class="form-label"><i class="bi bi-card-image"></i> Foto</label>
               <div class="d-flex gap-2 align-items-center">
                 <div class="sk-foto-box"><i class="bi bi-person-fill"></i></div>
-                <input asp-for="Foto" type="file" class="form-control sk-auth-input" accept="image/*" />
+                <input asp-for="Foto" type="file" class="form-control sk-auth-input sk-file-es" accept="image/*" />
               </div>
               <span asp-validation-for="Foto" class="text-danger"></span>
             </div>

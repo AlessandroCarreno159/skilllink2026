@@ -100,7 +100,7 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             Contenido = vm.Contenido, HabilidadesReq = vm.HabilidadesReq, Imagen = imagen,
             Categoria = string.IsNullOrWhiteSpace(vm.Categoria) ? null : vm.Categoria,
             Modalidad = string.IsNullOrWhiteSpace(vm.Modalidad) ? null : vm.Modalidad,
-            PrecioTexto = string.IsNullOrWhiteSpace(vm.PrecioTexto) ? null : vm.PrecioTexto.Trim(),
+            PrecioTexto = string.IsNullOrWhiteSpace(vm.PrecioTexto) || vm.PrecioTexto.Trim() == "A convenir" ? null : vm.PrecioTexto.Trim(),
             Vacantes = vm.Vacantes
         });
         await db.SaveChangesAsync();

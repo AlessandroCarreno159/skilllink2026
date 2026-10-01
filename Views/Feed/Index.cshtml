@@ -12,7 +12,7 @@
     <div class="feed-list">
     @if (!Model.Any())
     {
-      <div class="alert alert-info"><i class="bi bi-info-circle-fill"></i> No hay publicaciones con esos filtros.</div>
+      <div class="alert alert-info sk-toast sk-toast-info" role="status"><i class="bi bi-info-circle-fill"></i> No hay publicaciones con esos filtros.</div>
     }
     @foreach (var p in Model)
     {

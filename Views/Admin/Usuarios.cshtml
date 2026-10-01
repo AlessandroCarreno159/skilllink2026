@@ -1,7 +1,7 @@
 @* Admin: moderar usuarios (aprobar, rechazar, suspender, banear, editar nombre) *@
 @model IEnumerable<SkillLink_dotnet.Models.ApplicationUser>
 @{ ViewData["Title"] = "Usuarios"; }
-<h2>Usuarios (@ViewBag.Estado)</h2>
+<h2 class="sk-section-title">Usuarios (@ViewBag.Estado)</h2>
 <p>
   <a asp-action="Usuarios" asp-route-estado="pendiente">Pendientes</a> |
   <a asp-action="Usuarios" asp-route-estado="aprobado">Aprobados</a> |

@@ -6,7 +6,7 @@
       ? Model.Perfil?.NombreCompleto
       : Model.Empresa?.RazonSocial;
 }
-<h2>Editar nombre</h2>
+<h2 class="sk-section-title">Editar nombre</h2>
 <p class="text-muted">Usuario: @Model.Dni · Rol: @Model.Rol · Nombre actual: <strong>@(actual ?? "—")</strong></p>
 <form method="post">
   @Html.AntiForgeryToken()
