@@ -14,7 +14,7 @@ namespace SkillLink_dotnet.Controllers;
 public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser> users, ImageUploadService uploads) : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> Index(string? seccion = "laboral", string? tipo = null, string? q = null, string? ciudad = null, string? modalidad = null, string? categoria = null, int pagina = 1)
+    public async Task<IActionResult> Index(string? seccion = "laboral", string? tipo = null, string? q = null, string? ciudad = null, string? modalidad = null, string? categoria = null, int? estrellas = null, string? opCalif = ">=", int pagina = 1)
     {
         var query = db.Publicaciones
             .Include(p => p.Autor).ThenInclude(a => a!.Perfil)
@@ -30,6 +30,24 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             query = query.Where(p => p.Modalidad == modalidad);
         if (!string.IsNullOrWhiteSpace(categoria))
             query = query.Where(p => p.Categoria == categoria);
+        if (estrellas is >= 1 and <= 5)
+        {
+            var op = opCalif is "<=" or "=" or ">=" ? opCalif : ">=";
+            var e = estrellas.Value;
+            var promedios = db.Valoraciones
+                .Where(v => v.PublicacionId != null && v.Activo && v.Calificacion != null)
+                .GroupBy(v => v.PublicacionId!.Value)
+                .Select(g => new { Id = g.Key, Prom = g.Average(v => v.Calificacion!.Value) });
+            promedios = op switch
+            {
+                "<=" => promedios.Where(x => x.Prom <= e),
+                "=" => e >= 5
+                    ? promedios.Where(x => x.Prom == 5)
+                    : promedios.Where(x => x.Prom >= e && x.Prom < e + 1),
+                _ => promedios.Where(x => x.Prom >= e),
+            };
+            query = query.Where(p => promedios.Select(x => x.Id).Contains(p.Id));
+        }
         const int porPagina = 10;
         var total = await query.CountAsync();
         var totalPaginas = Math.Max(1, (int)Math.Ceiling(total / (double)porPagina));
@@ -42,11 +60,16 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             .GroupBy(c => c.PublicacionId)
             .ToDictionaryAsync(g => g.Key, g => g.Count());
         var autorIds = pubs.Select(p => p.AutorId).Distinct().ToList();
-        ViewBag.Rep = await db.Reputaciones
-            .Where(r => autorIds.Contains(r.UsuarioId))
-            .ToDictionaryAsync(r => r.UsuarioId, r => r);
+        _ = autorIds; // Reputación por usuario congelada; ahora se califica por publicación.
+        ViewBag.Ratings = await db.Valoraciones
+            .Where(v => v.PublicacionId != null && ids.Contains(v.PublicacionId.Value) && v.Activo && v.Calificacion != null)
+            .GroupBy(v => v.PublicacionId!.Value)
+            .Select(g => new { PublicacionId = g.Key, Total = g.Count(), Promedio = g.Average(v => v.Calificacion!.Value) })
+            .ToDictionaryAsync(x => x.PublicacionId, x => (Promedio: x.Promedio, Total: x.Total));
         ViewBag.Seccion = seccion; ViewBag.Q = q; ViewBag.Ciudad = ciudad; ViewBag.Tipo = tipo;
         ViewBag.Modalidad = modalidad; ViewBag.Categoria = categoria;
+        ViewBag.Estrellas = estrellas is >= 1 and <= 5 ? estrellas : null;
+        ViewBag.OpCalif = opCalif is "<=" or "=" or ">=" ? opCalif : ">=";
         ViewBag.Pagina = pagina; ViewBag.TotalPaginas = totalPaginas; ViewBag.Total = total;
         return View(pubs);
     }
@@ -100,8 +123,75 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             .OrderByDescending(c => c.Fecha).Take(5).ToListAsync();
         ViewBag.TotalComentarios = await db.ComentariosHilo
             .CountAsync(c => c.PublicacionId == id && c.Activo);
-        ViewBag.Reputacion = await db.Reputaciones.FindAsync(p.AutorId);
+        var rating = await db.Valoraciones
+            .Where(v => v.PublicacionId == id && v.Activo && v.Calificacion != null)
+            .GroupBy(v => v.PublicacionId)
+            .Select(g => new { Total = g.Count(), Promedio = g.Average(v => v.Calificacion!.Value) })
+            .FirstOrDefaultAsync();
+        ViewBag.RatingPromedio = rating?.Promedio ?? 0;
+        ViewBag.RatingTotal = rating?.Total ?? 0;
+        int? miVoto = null;
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var yoId = users.GetUserId(User);
+            if (yoId is not null)
+                miVoto = await db.Valoraciones
+                    .Where(v => v.PublicacionId == id && v.AutorId == yoId && v.Activo)
+                    .Select(v => v.Calificacion)
+                    .FirstOrDefaultAsync();
+        }
+        ViewBag.MiCalificacion = miVoto;
         return View(p);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    [Authorize, CuentaActiva]
+    public async Task<IActionResult> Calificar(int id, int calificacion)
+    {
+        if (calificacion < 1 || calificacion > 5)
+        {
+            TempData["Error"] = "Calificación inválida (1 a 5 estrellas).";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+        var p = await db.Publicaciones.FirstOrDefaultAsync(x => x.Id == id && x.Activa);
+        if (p is null) return NotFound();
+        var yo = (await users.GetUserAsync(User))!;
+        if (p.AutorId == yo.Id)
+        {
+            TempData["Warning"] = "No puedes calificar tu propia publicación.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+        try
+        {
+            var existente = await db.Valoraciones
+                .FirstOrDefaultAsync(v => v.PublicacionId == id && v.AutorId == yo.Id);
+            if (existente is null)
+            {
+                db.Valoraciones.Add(new ComentarioValoracion
+                {
+                    AutorId = yo.Id,
+                    DestinatarioId = p.AutorId,
+                    PublicacionId = id,
+                    Calificacion = calificacion,
+                    Comentario = string.Empty,
+                    Activo = true
+                });
+                TempData["Success"] = "Calificación guardada.";
+            }
+            else
+            {
+                existente.Calificacion = calificacion;
+                existente.Activo = true;
+                existente.Fecha = DateTime.UtcNow;
+                TempData["Success"] = "Calificación actualizada.";
+            }
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            TempData["Error"] = "Ya registraste tu calificación para esta publicación.";
+        }
+        return RedirectToAction(nameof(Details), new { id });
     }
 
     [HttpPost, ValidateAntiForgeryToken]

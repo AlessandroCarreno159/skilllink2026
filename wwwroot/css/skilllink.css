@@ -41,6 +41,12 @@
 .sk-filter-list a { color: var(--sk-ink); text-decoration: none; }
 .sk-filter-list a:hover { text-decoration: underline; }
 .sk-filter-list a.active { font-weight: 700; color: var(--sk-purple-dark); }
+.sk-filter-toggle { background: none; border: none; padding: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-top: 1rem; margin-bottom: 0.25rem; cursor: pointer; color: inherit; }
+.sk-filter-toggle .bi-chevron-down { transition: transform 0.2s; }
+.sk-filter-toggle[aria-expanded="true"] .bi-chevron-down { transform: rotate(180deg); }
+.sk-filter-opt { cursor: pointer; }
+.sk-filter-opt:hover span { text-decoration: underline; }
+.sk-filter-opt input:checked + span { font-weight: 700; color: var(--sk-purple-dark); }
 @media (min-width: 992px) {
   .sk-sidebar { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
 }

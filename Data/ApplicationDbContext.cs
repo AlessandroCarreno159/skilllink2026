@@ -77,6 +77,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             e.HasIndex(c => new { c.PublicacionId, c.Activo });
         });
 
+        // Calificación por publicación (1 voto por usuario, solo estrellas).
+        // Reputaciones por usuario se congela (código muerto histórico).
+        b.Entity<ComentarioValoracion>(e =>
+        {
+            e.HasIndex(v => new { v.PublicacionId, v.AutorId }).IsUnique();
+            e.HasIndex(v => v.PublicacionId);
+        });
+
         b.Entity<Notificacion>(e =>
         {
             e.HasIndex(n => new { n.UsuarioId, n.Leida });

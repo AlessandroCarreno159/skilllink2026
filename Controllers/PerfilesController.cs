@@ -74,6 +74,14 @@ public class WorkerController(ApplicationDbContext db, UserManager<ApplicationUs
         return View();
     }
 
+    // Acceso propio: redirige a la vista general pública (como la ve otra persona).
+    [HttpGet, Authorize(Roles = Roles.Trabajador)]
+    public async Task<IActionResult> MiPerfil()
+    {
+        var yo = (await users.GetUserAsync(User))!;
+        return RedirectToAction(nameof(Publico), new { id = yo.Id });
+    }
+
     // Perfil público de cualquier trabajador (avatar/nombre clicables).
     [HttpGet("/trabajador/perfil/{id}")]
     [AllowAnonymous]
@@ -84,6 +92,9 @@ public class WorkerController(ApplicationDbContext db, UserManager<ApplicationUs
         ViewBag.Perfil = u.Perfil;
         ViewBag.Usuario = u;
         ViewBag.Experiencias = await db.Experiencias.Where(e => e.UsuarioId == id).ToListAsync();
+        ViewBag.Documentos = await db.Documentos.Where(d => d.UsuarioId == id)
+            .OrderByDescending(d => d.FechaSubida).ToListAsync();
+        ViewBag.EsPropio = User.Identity?.IsAuthenticated == true && users.GetUserId(User) == id;
         return View();
     }
 
@@ -277,6 +288,14 @@ public class CompanyController(ApplicationDbContext db, UserManager<ApplicationU
         return RedirectToAction(nameof(Perfil));
     }
 
+    // Acceso propio: redirige a la vista general pública (como la ve otra persona).
+    [HttpGet, Authorize(Roles = Roles.Empresa)]
+    public async Task<IActionResult> MiEmpresa()
+    {
+        var yo = (await users.GetUserAsync(User))!;
+        return RedirectToAction(nameof(Publico), new { id = yo.Id });
+    }
+
     // Perfil público de cualquier empresa (avatar/nombre clicables).
     [HttpGet("/empresa/perfil/{id}")]
     [AllowAnonymous]
@@ -289,6 +308,9 @@ public class CompanyController(ApplicationDbContext db, UserManager<ApplicationU
         ViewBag.Ofertas = await db.Publicaciones
             .Where(p => p.AutorId == id && p.Activa)
             .OrderByDescending(p => p.FechaCreacion).Take(5).ToListAsync();
+        ViewBag.Documentos = await db.Documentos.Where(d => d.UsuarioId == id)
+            .OrderByDescending(d => d.FechaSubida).ToListAsync();
+        ViewBag.EsPropio = User.Identity?.IsAuthenticated == true && users.GetUserId(User) == id;
         return View();
     }
 }

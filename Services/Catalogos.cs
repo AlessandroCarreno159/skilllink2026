@@ -21,6 +21,16 @@ public static class Catalogos
         ["por_proyecto"] = "Por proyecto",
     };
 
+    /// <summary>Departamentos del Perú para el filtro de ubicación.</summary>
+    public static readonly string[] Departamentos = new[]
+    {
+        "Amazonas", "Áncash", "Apurímac", "Arequipa", "Ayacucho", "Cajamarca",
+        "Callao", "Cusco", "Huancavelica", "Huánuco", "Ica", "Junín",
+        "La Libertad", "Lambayeque", "Lima", "Loreto", "Madre de Dios",
+        "Moquegua", "Pasco", "Piura", "Puno", "San Martín", "Tacna",
+        "Tumbes", "Ucayali",
+    };
+
     public static readonly Dictionary<string, string> Tipos = new()
     {
         [TiposPublicacion.Oferta] = "Oferta",

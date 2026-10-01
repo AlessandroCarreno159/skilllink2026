@@ -11,3 +11,8 @@
     <a asp-controller="Feed" asp-action="Details" asp-route-id="@p.Id" class="ms-2">Ver</a>
   </div></div>
 }
+@if (ViewBag.Postulaciones is List<(SkillLink_dotnet.Models.Solicitud S, SkillLink_dotnet.Models.Publicacion P, string? Razon)> postulaciones)
+{
+  <h4 class="mt-4">Mis postulaciones</h4>
+  <partial name="~/Views/Solicitudes/_MisPostulacionesTabla.cshtml" model="postulaciones" />
+}

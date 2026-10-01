@@ -23,6 +23,15 @@ public class DashboardController(
         ViewBag.RepPromedio = prom; ViewBag.RepTotal = total; ViewBag.Estado = yo.EstadoCuenta;
         ViewBag.Pubs = await db.Publicaciones.Where(p => p.AutorId == yo.Id && p.Activa)
             .OrderByDescending(p => p.FechaCreacion).Take(10).ToListAsync();
+        if (yo.Rol == Roles.Trabajador)
+        {
+            var lista = await db.Solicitudes
+                .Where(s => s.TrabajadorId == yo.Id && s.Activa)
+                .OrderByDescending(s => s.FechaPostulacion)
+                .Select(s => new { S = s, P = s.Publicacion!, Razon = s.Publicacion!.Autor!.Empresa!.RazonSocial })
+                .ToListAsync();
+            ViewBag.Postulaciones = lista.Select(x => (x.S, x.P, x.Razon)).ToList();
+        }
         return View();
     }
 }

@@ -25,11 +25,7 @@
                         <li class="nav-item"><a class="nav-link" asp-controller="Feed" asp-action="Index">Feed laboral</a></li>
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            @if (User.IsInRole("trabajador"))
-                            {
-                                <li class="nav-item"><a class="nav-link" asp-controller="Solicitudes" asp-action="MisPostulaciones">Postulaciones</a></li>
-                            }
-                            else if (User.IsInRole("empresa"))
+                            @if (User.IsInRole("empresa"))
                             {
                                 <li class="nav-item"><a class="nav-link" asp-controller="Solicitudes" asp-action="Recibidas">Postulaciones</a></li>
                             }
@@ -41,7 +37,7 @@
                             }
                             @if (!User.IsInRole("admin"))
                             {
-                                <li class="nav-item"><a class="nav-link" asp-controller="Feed" asp-action="Create">Publicaciones</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-controller="Feed" asp-action="Create" title="Nueva publicación"><i class="bi bi-plus-lg"></i></a></li>
                             }
                         }
                     </ul>
@@ -59,7 +55,7 @@
                             @if (User.IsInRole("trabajador"))
                             {
                                 <li class="nav-item d-flex align-items-center">
-                                    <a class="nav-link" asp-controller="Worker" asp-action="Perfil" title="Mi perfil">
+                                    <a class="nav-link" asp-controller="Worker" asp-action="MiPerfil" title="Mi perfil">
                                         <i class="bi bi-person-circle"></i>
                                     </a>
                                 </li>
@@ -67,7 +63,7 @@
                             else if (User.IsInRole("empresa"))
                             {
                                 <li class="nav-item d-flex align-items-center">
-                                    <a class="nav-link" asp-controller="Company" asp-action="Perfil" title="Mi perfil">
+                                    <a class="nav-link" asp-controller="Company" asp-action="MiEmpresa" title="Mi perfil">
                                         <i class="bi bi-person-circle"></i>
                                     </a>
                                 </li>

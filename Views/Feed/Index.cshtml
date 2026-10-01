@@ -28,16 +28,16 @@
       <nav aria-label="Paginación del feed" class="my-4 pb-2">
         <ul class="pagination justify-content-center">
           <li class="page-item @(pagina <= 1 ? "disabled" : "")">
-            <a class="page-link" asp-action="Index" asp-route-pagina="@(pagina - 1)" asp-route-q="@ViewBag.Q" asp-route-ciudad="@ViewBag.Ciudad" asp-route-tipo="@ViewBag.Tipo" asp-route-modalidad="@ViewBag.Modalidad" asp-route-categoria="@ViewBag.Categoria" aria-label="Anterior"><span aria-hidden="true">&laquo;</span></a>
+            <a class="page-link" asp-action="Index" asp-route-pagina="@(pagina - 1)" asp-route-q="@ViewBag.Q" asp-route-ciudad="@ViewBag.Ciudad" asp-route-tipo="@ViewBag.Tipo" asp-route-modalidad="@ViewBag.Modalidad" asp-route-categoria="@ViewBag.Categoria" asp-route-estrellas="@ViewBag.Estrellas" asp-route-opCalif="@ViewBag.OpCalif" aria-label="Anterior"><span aria-hidden="true">&laquo;</span></a>
           </li>
           @for (var i = 1; i <= totalPaginas; i++)
           {
             <li class="page-item @(i == pagina ? "active" : "")">
-              <a class="page-link" asp-action="Index" asp-route-pagina="@i" asp-route-q="@ViewBag.Q" asp-route-ciudad="@ViewBag.Ciudad" asp-route-tipo="@ViewBag.Tipo" asp-route-modalidad="@ViewBag.Modalidad" asp-route-categoria="@ViewBag.Categoria">@i</a>
+              <a class="page-link" asp-action="Index" asp-route-pagina="@i" asp-route-q="@ViewBag.Q" asp-route-ciudad="@ViewBag.Ciudad" asp-route-tipo="@ViewBag.Tipo" asp-route-modalidad="@ViewBag.Modalidad" asp-route-categoria="@ViewBag.Categoria" asp-route-estrellas="@ViewBag.Estrellas" asp-route-opCalif="@ViewBag.OpCalif">@i</a>
             </li>
           }
           <li class="page-item @(pagina >= totalPaginas ? "disabled" : "")">
-            <a class="page-link" asp-action="Index" asp-route-pagina="@(pagina + 1)" asp-route-q="@ViewBag.Q" asp-route-ciudad="@ViewBag.Ciudad" asp-route-tipo="@ViewBag.Tipo" asp-route-modalidad="@ViewBag.Modalidad" asp-route-categoria="@ViewBag.Categoria" aria-label="Siguiente"><span aria-hidden="true">&raquo;</span></a>
+            <a class="page-link" asp-action="Index" asp-route-pagina="@(pagina + 1)" asp-route-q="@ViewBag.Q" asp-route-ciudad="@ViewBag.Ciudad" asp-route-tipo="@ViewBag.Tipo" asp-route-modalidad="@ViewBag.Modalidad" asp-route-categoria="@ViewBag.Categoria" asp-route-estrellas="@ViewBag.Estrellas" asp-route-opCalif="@ViewBag.OpCalif" aria-label="Siguiente"><span aria-hidden="true">&raquo;</span></a>
           </li>
         </ul>
       </nav>

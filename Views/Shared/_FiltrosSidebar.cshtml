@@ -1,50 +1,88 @@
-@* Parcial: barra lateral de filtros del feed *@
+@* Parcial: barra lateral de filtros del feed (se selecciona y se aplica con Filtrar) *@
 @using SkillLink_dotnet.Services
 @{
   string? q = ViewBag.Q, ciudad = ViewBag.Ciudad, tipo = ViewBag.Tipo;
   string? modalidad = ViewBag.Modalidad, categoria = ViewBag.Categoria;
-  var action = ViewContext.RouteData.Values["action"]?.ToString();
-  var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+  int? estrellas = ViewBag.Estrellas as int?;
+  string opCalif = (ViewBag.OpCalif as string) ?? ">=";
 }
 <aside class="sk-sidebar mb-3">
-  <form method="get" class="mb-3">
+  <form method="get">
     <div class="input-group mb-2">
       <span class="input-group-text sk-auth-input"><i class="bi bi-search"></i></span>
       <input name="q" value="@q" class="form-control sk-auth-input" placeholder="Buscar…" />
     </div>
-    <div class="input-group mb-2">
-      <span class="input-group-text sk-auth-input"><i class="bi bi-geo-alt"></i></span>
-      <input name="ciudad" value="@ciudad" class="form-control sk-auth-input" placeholder="Departamento" />
-    </div>
     @if (!string.IsNullOrWhiteSpace(tipo)) { <input type="hidden" name="tipo" value="@tipo" /> }
-    @if (!string.IsNullOrWhiteSpace(modalidad)) { <input type="hidden" name="modalidad" value="@modalidad" /> }
-    @if (!string.IsNullOrWhiteSpace(categoria)) { <input type="hidden" name="categoria" value="@categoria" /> }
-    <button class="btn btn-secondary btn-sm w-100"><i class="bi bi-funnel-fill"></i> Filtrar</button>
+    <a class="btn sk-btn-continuar btn-sm mb-2" asp-controller="Feed" asp-action="Create"><i class="bi bi-plus-circle-fill"></i> Nueva publicación</a>
+    <h5><i class="bi bi-funnel-fill"></i> Filtros</h5>
+
+    <button class="sk-filter-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#fUbicacion" aria-expanded="true" aria-controls="fUbicacion">
+      <span><i class="bi bi-geo-alt-fill sk-ic-pin"></i> Ubicación</span><i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="collapse show" id="fUbicacion">
+      <ul class="sk-filter-list">
+        @foreach (var u in new[] { "Arequipa", "Trujillo", "Lima" })
+        {
+          <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="ciudad" value="@u" checked="@(ciudad == u)" /><span>@u</span></label></li>
+        }
+        @foreach (var d in Catalogos.Departamentos.Where(x => x != "Lima" && x != "Arequipa"))
+        {
+          <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="ciudad" value="@d" checked="@(ciudad == d)" /><span>@d</span></label></li>
+        }
+        <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="ciudad" value="" checked="@(string.IsNullOrWhiteSpace(ciudad))" /><span>Todas</span></label></li>
+      </ul>
+    </div>
+
+    <button class="sk-filter-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#fTipo" aria-expanded="true" aria-controls="fTipo">
+      <span><i class="bi bi-clock-fill sk-ic-brand"></i> Tipo de trabajo</span><i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="collapse show" id="fTipo">
+      <ul class="sk-filter-list">
+        @foreach (var kv in Catalogos.Modalidades)
+        {
+          <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="modalidad" value="@kv.Key" checked="@(modalidad == kv.Key)" /><span>@kv.Value</span></label></li>
+        }
+        <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="modalidad" value="" checked="@(string.IsNullOrWhiteSpace(modalidad))" /><span>Todos</span></label></li>
+      </ul>
+    </div>
+
+    <button class="sk-filter-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#fCategoria" aria-expanded="true" aria-controls="fCategoria">
+      <span><i class="bi bi-grid-fill sk-ic-brand"></i> Categoría</span><i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="collapse show" id="fCategoria">
+      <ul class="sk-filter-list">
+        @foreach (var kv in Catalogos.Categorias)
+        {
+          <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="categoria" value="@kv.Key" checked="@(categoria == kv.Key)" /><span>@kv.Value</span></label></li>
+        }
+        <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="categoria" value="" checked="@(string.IsNullOrWhiteSpace(categoria))" /><span>Todas</span></label></li>
+      </ul>
+    </div>
+
+    <button class="sk-filter-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#fCalif" aria-expanded="true" aria-controls="fCalif">
+      <span><i class="bi bi-star-fill sk-ic-star"></i> Calificación</span><i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="collapse show" id="fCalif">
+      <div class="d-flex align-items-center gap-2 flex-wrap mt-1">
+        <div class="btn-group btn-group-sm" role="group" aria-label="Estrellas">
+          @for (var s = 1; s <= 5; s++)
+          {
+            <input type="radio" class="btn-check" name="estrellas" id="f-star-@s" value="@s" checked="@(estrellas == s)" />
+            <label class="btn @(estrellas.HasValue && estrellas >= s ? "btn-warning" : "btn-outline-warning")" for="f-star-@s">@s ★</label>
+          }
+        </div>
+      </div>
+      <select name="opCalif" class="form-select form-select-sm mt-2" title="Comparador de calificación">
+        <option value="<=" selected="@(opCalif == "<=")">Menor o igual que</option>
+        <option value="=" selected="@(opCalif == "=")">Igual que</option>
+        <option value=">=" selected="@(opCalif == ">=")">Mayor o igual que</option>
+      </select>
+      @if (estrellas.HasValue)
+      {
+        <button type="button" class="btn btn-sm btn-link p-0 mt-1" onclick="document.querySelectorAll('#fCalif input[name=estrellas]').forEach(r=>r.checked=false)">Quitar selección</button>
+      }
+    </div>
+
+    <button class="btn btn-secondary btn-sm w-100 mt-3" type="submit"><i class="bi bi-funnel-fill"></i> Filtrar</button>
   </form>
-  <a class="btn sk-btn-continuar btn-sm mb-2" asp-controller="Feed" asp-action="Create"><i class="bi bi-plus-circle-fill"></i> Nueva publicación</a>
-  <h5><i class="bi bi-funnel-fill"></i> Filtros</h5>
-  <p class="sk-filter-title"><i class="bi bi-geo-alt-fill sk-ic-pin"></i> Ubicación</p>
-  <ul class="sk-filter-list">
-    @foreach (var u in new[] { "Arequipa", "Trujillo", "Lima" })
-    {
-      <li><a asp-controller="@controller" asp-action="@action" asp-route-q="@q" asp-route-ciudad="@u" asp-route-tipo="@tipo" asp-route-modalidad="@modalidad" asp-route-categoria="@categoria" class="@(ciudad == u ? "active" : "")">@u</a></li>
-    }
-    <li><a asp-controller="@controller" asp-action="@action" asp-route-q="@q" asp-route-tipo="@tipo" asp-route-modalidad="@modalidad" asp-route-categoria="@categoria" class="@(string.IsNullOrWhiteSpace(ciudad) ? "active" : "")">Todas</a></li>
-  </ul>
-  <p class="sk-filter-title"><i class="bi bi-clock-fill sk-ic-brand"></i> Tipo de trabajo</p>
-  <ul class="sk-filter-list">
-    @foreach (var kv in Catalogos.Modalidades)
-    {
-      <li><a asp-controller="@controller" asp-action="@action" asp-route-q="@q" asp-route-ciudad="@ciudad" asp-route-tipo="@tipo" asp-route-modalidad="@kv.Key" asp-route-categoria="@categoria" class="@(modalidad == kv.Key ? "active" : "")">@kv.Value</a></li>
-    }
-    <li><a asp-controller="@controller" asp-action="@action" asp-route-q="@q" asp-route-ciudad="@ciudad" asp-route-tipo="@tipo" asp-route-categoria="@categoria" class="@(string.IsNullOrWhiteSpace(modalidad) ? "active" : "")">Todos</a></li>
-  </ul>
-  <p class="sk-filter-title"><i class="bi bi-grid-fill sk-ic-brand"></i> Categoría</p>
-  <ul class="sk-filter-list">
-    @foreach (var kv in Catalogos.Categorias)
-    {
-      <li><a asp-controller="@controller" asp-action="@action" asp-route-q="@q" asp-route-ciudad="@ciudad" asp-route-tipo="@tipo" asp-route-modalidad="@modalidad" asp-route-categoria="@kv.Key" class="@(categoria == kv.Key ? "active" : "")">@kv.Value</a></li>
-    }
-    <li><a asp-controller="@controller" asp-action="@action" asp-route-q="@q" asp-route-ciudad="@ciudad" asp-route-tipo="@tipo" asp-route-modalidad="@modalidad" class="@(string.IsNullOrWhiteSpace(categoria) ? "active" : "")">Todas</a></li>
-  </ul>
 </aside>
