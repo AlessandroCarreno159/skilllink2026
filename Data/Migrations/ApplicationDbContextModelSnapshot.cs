@@ -389,13 +389,21 @@ namespace SkillLink_dotnet.Data.Migrations
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("PublicacionId")
                         .HasColumnType("int");
 
                     b.Property<bool>("Recomendacion")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<string>("RespuestaAUsuarioId")
+                        .HasColumnType("longtext");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("AutorId");
 
                     b.HasIndex("PublicacionId");
 
@@ -886,6 +894,17 @@ namespace SkillLink_dotnet.Data.Migrations
                     b.Navigation("Autor");
 
                     b.Navigation("Publicacion");
+                });
+
+            modelBuilder.Entity("SkillLink_dotnet.Models.ComentarioValoracion", b =>
+                {
+                    b.HasOne("SkillLink_dotnet.Models.ApplicationUser", "Autor")
+                        .WithMany()
+                        .HasForeignKey("AutorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Autor");
                 });
 
             modelBuilder.Entity("SkillLink_dotnet.Models.Empresa", b =>

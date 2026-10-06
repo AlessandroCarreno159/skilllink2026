@@ -3,11 +3,24 @@
 @{ ViewData["Title"] = "Denuncias"; }
 <h2 class="sk-section-title">Denuncias</h2>
 <table class="table table-striped">
-  <thead><tr><th>Tipo</th><th>Objeto</th><th>Motivo</th><th>Estado</th><th>Fecha</th></tr></thead>
+  <thead><tr><th>Tipo</th><th>Objeto</th><th>Motivo</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
   <tbody>
   @foreach (var d in Model)
   {
-    <tr><td>@d.ObjetoTipo</td><td>@d.ObjetoId</td><td>@d.Motivo</td><td>@d.Estado</td><td>@d.Fecha.ToLocalTime()</td></tr>
+    <tr>
+      <td>@d.ObjetoTipo</td><td>@d.ObjetoId</td><td>@d.Motivo</td><td><span class="badge bg-secondary">@d.Estado</span></td><td>@d.Fecha.ToLocalTime()</td>
+      <td>
+        @if (d.Estado == "pendiente")
+        {
+          <form asp-action="ResolverDenuncia" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@d.Id" />
+            <button name="accion" value="resolver" class="btn btn-sm btn-success">Resolver</button>
+            <button name="accion" value="desestimar" class="btn btn-sm btn-outline-secondary">Desestimar</button>
+          </form>
+        }
+      </td>
+    </tr>
   }
   </tbody>
 </table>

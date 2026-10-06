@@ -1,4 +1,6 @@
 ﻿@* Layout principal: navbar, campana, Panel, footer y alertas *@
+@inject Microsoft.Extensions.Configuration.IConfiguration Cfg
+@using System.Security.Claims
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -118,6 +120,20 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/notificaciones.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (User.Identity?.IsAuthenticated == true
+        && !string.IsNullOrWhiteSpace(Cfg["PieSocket:ApiKey"])
+        && !string.IsNullOrWhiteSpace(Cfg["PieSocket:ChannelId"]))
+    {
+      <script>
+        window.__skUserId = "@User.FindFirstValue(ClaimTypes.NameIdentifier)";
+        window.__skPie = {
+          endpoint: "@(Cfg["PieSocket:Endpoint"] ?? "wss://free.nyc1.piesocket.com")",
+          key: "@Cfg["PieSocket:ApiKey"]",
+          channel: "@Cfg["PieSocket:ChannelId"]"
+        };
+      </script>
+      <script src="~/js/realtime.js" asp-append-version="true"></script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

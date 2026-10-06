@@ -40,7 +40,8 @@ public class DashboardController(
 public class AdminController(
     ApplicationDbContext db,
     UserManager<ApplicationUser> users,
-    ImageUploadService uploads) : Controller
+    ImageUploadService uploads,
+    SkillLink.Services.AlgoliaService algolia) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> Usuarios(string estado = "pendiente")
@@ -66,7 +67,20 @@ public class AdminController(
         var u = await db.Users.FindAsync(id);
         if (u is null) return NotFound();
         u.EstadoCuenta = estado;
-        db.HistorialModeracion.Add(new HistorialModeracion { UsuarioId = id, Accion = accion });
+        var adminG = await users.GetUserAsync(User);
+        db.HistorialModeracion.Add(new HistorialModeracion { UsuarioId = id, AdminId = adminG?.Id, Accion = accion });
+        if (estado == EstadosCuenta.Baneado)
+        {
+            // El baneo bloquea el DNI: sin este registro el usuario podía re-registrarse.
+            if (!await db.BaneosDni.AnyAsync(b => b.Dni == u.Dni))
+                db.BaneosDni.Add(new BaneoDni { Dni = u.Dni, Motivo = "Baneo por moderación", BaneadoPor = adminG?.Id });
+        }
+        else if (estado == EstadosCuenta.Aprobado)
+        {
+            // Aprobar levanta el baneo del DNI si existía.
+            var baneo = await db.BaneosDni.FirstOrDefaultAsync(b => b.Dni == u.Dni);
+            if (baneo is not null) db.BaneosDni.Remove(baneo);
+        }
         await db.SaveChangesAsync();
         TempData["Success"] = $"Cuenta {estado}.";
         return RedirectToAction(nameof(Usuarios));
@@ -75,6 +89,30 @@ public class AdminController(
     [HttpGet]
     public async Task<IActionResult> Denuncias()
         => View(await db.Denuncias.OrderByDescending(d => d.Fecha).ToListAsync());
+
+    // Resolver una denuncia: resuelta (se tomó acción) o desestimada.
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResolverDenuncia(int id, string accion)
+    {
+        var map = new Dictionary<string, string>
+        {
+            ["resolver"] = "resuelta", ["desestimar"] = "desestimada"
+        };
+        if (!map.TryGetValue(accion, out var estado))
+        { TempData["Error"] = "Acción no válida."; return RedirectToAction(nameof(Denuncias)); }
+        var d = await db.Denuncias.FindAsync(id);
+        if (d is null) { TempData["Error"] = "Denuncia no encontrada."; return RedirectToAction(nameof(Denuncias)); }
+        d.Estado = estado;
+        var admin = await users.GetUserAsync(User);
+        db.HistorialModeracion.Add(new HistorialModeracion
+        {
+            UsuarioId = d.DenuncianteId, AdminId = admin?.Id,
+            Accion = "denuncia_" + accion, ObjetoTipo = d.ObjetoTipo, ObjetoId = d.ObjetoId
+        });
+        await db.SaveChangesAsync();
+        TempData["Success"] = $"Denuncia {estado}.";
+        return RedirectToAction(nameof(Denuncias));
+    }
 
     [HttpGet]
     public async Task<IActionResult> Publicaciones()
@@ -129,6 +167,7 @@ public class AdminController(
         db.Publicaciones.Remove(p);
         await db.SaveChangesAsync();
         uploads.Borrar(p.Imagen);
+        await algolia.DeletePublicacionAsync(id);
         TempData["Success"] = "Publicación eliminada definitivamente.";
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)) return Redirect(returnUrl);
         return RedirectToAction(nameof(Publicaciones));

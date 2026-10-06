@@ -24,3 +24,17 @@ services:
       # Contraseña del admin inicial. Rotarla/quitarla tras el primer login.
       - key: AdminSeed__Password
         sync: false
+      - key: Algolia__ApplicationId
+        value: ZUL3Y9M7QD
+      - key: Algolia__ApiKey
+        sync: false
+      - key: Algolia__IndexName
+        value: skilllink_index
+      - key: PieSocket__ApiKey
+        sync: false
+      - key: PieSocket__Secret
+        sync: false
+      - key: PieSocket__ChannelId
+        value: "1"
+      - key: PieSocket__Endpoint
+        value: wss://free.blr2.piesocket.com

@@ -11,7 +11,7 @@ using SkillLink_dotnet.ViewModels;
 namespace SkillLink_dotnet.Controllers;
 
 /// <summary>Feed laboral: listar / nueva / detalle / comentar (feed.py).</summary>
-public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser> users, ImageUploadService uploads) : Controller
+public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser> users, ImageUploadService uploads, SkillLink.Services.AlgoliaService algolia, ReputacionService reputacion) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> Index(string? seccion = "laboral", string? tipo = null, string? q = null, string? ciudad = null, string? modalidad = null, string? categoria = null, int? estrellas = null, string? opCalif = ">=", int pagina = 1)
@@ -21,7 +21,32 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             .Include(p => p.Autor).ThenInclude(a => a!.Empresa)
             .Where(p => p.Activa).AsQueryable();
         if (!string.IsNullOrWhiteSpace(q))
-            query = query.Where(p => (p.Titulo + " " + p.Contenido + " " + (p.HabilidadesReq ?? "")).Contains(q));
+        {
+            // Algolia primero (relevancia); si no está configurado o falla, LIKE en BD.
+            var idsAlgolia = await algolia.SearchPublicacionIdsAsync(q, 50);
+            if (idsAlgolia is { Count: > 0 })
+            {
+                query = query.Where(p => idsAlgolia.Contains(p.Id));
+                ViewBag.UsaAlgolia = true;
+            }
+            else if (idsAlgolia is null)
+            {
+                query = query.Where(p => (p.Titulo + " " + p.Contenido + " " + (p.HabilidadesReq ?? "")).Contains(q));
+            }
+            else
+            {
+                // Algolia respondió sin coincidencias: resultado vacío.
+                ViewBag.UsaAlgolia = true;
+                ViewBag.CommentsCount = new Dictionary<int, int>();
+                ViewBag.Ratings = new Dictionary<int, (double Promedio, int Total)>();
+                ViewBag.Seccion = seccion; ViewBag.Q = q; ViewBag.Ciudad = ciudad; ViewBag.Tipo = tipo;
+                ViewBag.Modalidad = modalidad; ViewBag.Categoria = categoria;
+                ViewBag.Estrellas = estrellas is >= 1 and <= 5 ? estrellas : null;
+                ViewBag.OpCalif = opCalif is "<=" or "=" or ">=" ? opCalif : ">=";
+                ViewBag.Pagina = 1; ViewBag.TotalPaginas = 1; ViewBag.Total = 0;
+                return View(new List<Publicacion>());
+            }
+        }
         if (!string.IsNullOrWhiteSpace(ciudad))
             query = query.Where(p => p.Autor!.Perfil!.Ciudad == ciudad || p.Autor!.Empresa!.Ciudad == ciudad);
         if (!string.IsNullOrWhiteSpace(tipo))
@@ -94,7 +119,7 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             if (error is not null) { ModelState.AddModelError(nameof(vm.Imagen), error); return View(vm); }
             imagen = await uploads.GuardarAsync(vm.Imagen, "publicaciones");
         }
-        db.Publicaciones.Add(new Publicacion
+        var pub = new Publicacion
         {
             AutorId = yo.Id, Tipo = vm.Tipo, Titulo = vm.Titulo,
             Contenido = vm.Contenido, HabilidadesReq = vm.HabilidadesReq, Imagen = imagen,
@@ -102,8 +127,11 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             Modalidad = string.IsNullOrWhiteSpace(vm.Modalidad) ? null : vm.Modalidad,
             PrecioTexto = string.IsNullOrWhiteSpace(vm.PrecioTexto) || vm.PrecioTexto.Trim() == "A convenir" ? null : vm.PrecioTexto.Trim(),
             Vacantes = vm.Vacantes
-        });
+        };
+        db.Publicaciones.Add(pub);
         await db.SaveChangesAsync();
+        // Indexación externa (no bloquea ni rompe la creación si Algolia falla).
+        await algolia.IndexPublicacionAsync(pub);
         TempData["Success"] = "Publicación creada.";
         return RedirectToAction(nameof(Index));
     }
@@ -130,6 +158,19 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             .FirstOrDefaultAsync();
         ViewBag.RatingPromedio = rating?.Promedio ?? 0;
         ViewBag.RatingTotal = rating?.Total ?? 0;
+        // Lista de calificaciones con texto + sus respuestas (hilo por ParentId).
+        var topVals = await db.Valoraciones
+            .Include(v => v.Autor).ThenInclude(a => a!.Perfil)
+            .Include(v => v.Autor).ThenInclude(a => a!.Empresa)
+            .Where(v => v.PublicacionId == id && v.Activo && v.ParentId == null)
+            .OrderByDescending(v => v.Fecha).Take(10).ToListAsync();
+        var topIds = topVals.Select(v => v.Id).ToList();
+        ViewBag.Valoraciones = topVals;
+        ViewBag.RespuestasValoracion = await db.Valoraciones
+            .Include(v => v.Autor).ThenInclude(a => a!.Perfil)
+            .Include(v => v.Autor).ThenInclude(a => a!.Empresa)
+            .Where(v => v.ParentId != null && topIds.Contains(v.ParentId.Value) && v.Activo)
+            .OrderBy(v => v.Fecha).ToListAsync();
         int? miVoto = null;
         if (User.Identity?.IsAuthenticated == true)
         {
@@ -146,7 +187,7 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
 
     [HttpPost, ValidateAntiForgeryToken]
     [Authorize, CuentaActiva]
-    public async Task<IActionResult> Calificar(int id, int calificacion)
+    public async Task<IActionResult> Calificar(int id, int calificacion, string? comentario = null)
     {
         if (calificacion < 1 || calificacion > 5)
         {
@@ -161,10 +202,11 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             TempData["Warning"] = "No puedes calificar tu propia publicación.";
             return RedirectToAction(nameof(Details), new { id });
         }
+        var texto = string.IsNullOrWhiteSpace(comentario) ? string.Empty : comentario.Trim();
         try
         {
             var existente = await db.Valoraciones
-                .FirstOrDefaultAsync(v => v.PublicacionId == id && v.AutorId == yo.Id);
+                .FirstOrDefaultAsync(v => v.PublicacionId == id && v.AutorId == yo.Id && v.ParentId == null);
             if (existente is null)
             {
                 db.Valoraciones.Add(new ComentarioValoracion
@@ -173,7 +215,8 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
                     DestinatarioId = p.AutorId,
                     PublicacionId = id,
                     Calificacion = calificacion,
-                    Comentario = string.Empty,
+                    Comentario = texto,
+                    ParentId = null,
                     Activo = true
                 });
                 TempData["Success"] = "Calificación guardada.";
@@ -181,17 +224,44 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             else
             {
                 existente.Calificacion = calificacion;
+                if (!string.IsNullOrEmpty(texto)) existente.Comentario = texto;
                 existente.Activo = true;
                 existente.Fecha = DateTime.UtcNow;
                 TempData["Success"] = "Calificación actualizada.";
             }
             await db.SaveChangesAsync();
+            await reputacion.RecalcularAsync(p.AutorId);
         }
         catch (DbUpdateException)
         {
             TempData["Error"] = "Ya registraste tu calificación para esta publicación.";
         }
         return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    [Authorize, CuentaActiva]
+    public async Task<IActionResult> ResponderValoracion(int valoracionId, string comentario)
+    {
+        var padre = await db.Valoraciones.FirstOrDefaultAsync(v => v.Id == valoracionId && v.Activo && v.ParentId == null);
+        if (padre?.PublicacionId is null)
+        { TempData["Error"] = "Calificación no encontrada."; return RedirectToAction(nameof(Index)); }
+        if (string.IsNullOrWhiteSpace(comentario))
+        { TempData["Warning"] = "Respuesta vacía."; return RedirectToAction(nameof(Details), new { id = padre.PublicacionId }); }
+        var yo = (await users.GetUserAsync(User))!;
+        db.Valoraciones.Add(new ComentarioValoracion
+        {
+            AutorId = yo.Id,
+            DestinatarioId = padre.AutorId,
+            PublicacionId = null, // hija: cuelga del padre, fuera del índice único
+            Comentario = comentario.Trim(),
+            ParentId = padre.Id,
+            RespuestaAUsuarioId = padre.AutorId,
+            Activo = true
+        });
+        await db.SaveChangesAsync();
+        TempData["Success"] = "Respuesta publicada.";
+        return RedirectToAction(nameof(Details), new { id = padre.PublicacionId });
     }
 
     [HttpPost, ValidateAntiForgeryToken]

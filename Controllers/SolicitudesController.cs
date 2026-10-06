@@ -41,6 +41,8 @@ public class SolicitudesController(
             existe.Mensaje = string.IsNullOrWhiteSpace(mensaje) ? existe.Mensaje : mensaje!;
             existe.FechaPostulacion = DateTime.UtcNow;
             await db.SaveChangesAsync();
+            await notificaciones.CrearAsync(pub.AutorId, "Nueva postulación recibida",
+                "Tiene una nueva postulación por revisar.", "/Solicitudes/Recibidas");
             TempData["Success"] = "Postulación enviada correctamente.";
             return RedirectToAction("Details", "Feed", new { id = publicacionId });
         }
@@ -55,6 +57,8 @@ public class SolicitudesController(
             Estado = EstadosSolicitud.Pendiente
         });
         await db.SaveChangesAsync();
+        await notificaciones.CrearAsync(pub.AutorId, "Nueva postulación recibida",
+            "Tiene una nueva postulación por revisar.", "/Solicitudes/Recibidas");
         TempData["Success"] = "Postulación enviada correctamente.";
         return RedirectToAction("Details", "Feed", new { id = publicacionId });
     }

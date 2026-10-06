@@ -13,6 +13,8 @@
   var telefono = Model.Autor?.Perfil?.Telefono ?? Model.Autor?.Empresa?.Telefono ?? Model.Autor?.PhoneNumber ?? "—";
   var tags = (Model.HabilidadesReq ?? "").Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
   var comentarios = (IEnumerable<SkillLink_dotnet.Models.ComentarioPublicacion>)ViewBag.Comentarios;
+  var valoraciones = (IEnumerable<SkillLink_dotnet.Models.ComentarioValoracion>)(ViewBag.Valoraciones ?? Enumerable.Empty<SkillLink_dotnet.Models.ComentarioValoracion>());
+  var respuestasVal = (IEnumerable<SkillLink_dotnet.Models.ComentarioValoracion>)(ViewBag.RespuestasValoracion ?? Enumerable.Empty<SkillLink_dotnet.Models.ComentarioValoracion>());
 }
 <div class="row g-4">
   <div class="col-lg-4">
@@ -70,6 +72,7 @@
               <label class="btn btn-sm sk-star-btn" for="star-@s">@s ★</label>
             }
           </div>
+          <input name="comentario" class="form-control form-control-sm" placeholder="Comentario (opcional)" />
           <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-check-circle-fill"></i> @(miVoto.HasValue ? "Actualizar" : "Calificar")</button>
         </form>
       }
@@ -160,3 +163,45 @@
     </div></div>
   }
 </div>
+<h4 class="sk-section-title mt-4"><i class="bi bi-star-fill sk-ic-star"></i> Calificaciones (@ratingTotal)</h4>
+@foreach (var v in valoraciones)
+{
+  var vUrl = ImageUploadService.PerfilUrl(v.Autor);
+  <div class="card mb-2 sk-item"><div class="card-body">
+    <div class="d-flex gap-2 align-items-start">
+      @if (vUrl is null)
+      {
+        <img src="@Uploads.Avatar(v.Autor)" alt="" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover" loading="lazy" />
+        <div><strong>@ImageUploadService.NombrePublico(v.Autor)</strong></div>
+      }
+      else
+      {
+        <a href="@vUrl"><img src="@Uploads.Avatar(v.Autor)" alt="" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover" loading="lazy" /></a>
+        <div><a href="@vUrl" class="text-decoration-none"><strong>@ImageUploadService.NombrePublico(v.Autor)</strong></a></div>
+      }
+      <span class="ms-auto text-warning">@for (var i = 0; i < (v.Calificacion ?? 0); i++) {<i class="bi bi-star-fill"></i>}</span>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(v.Comentario))
+    {
+      <p class="mb-1 mt-2">@v.Comentario</p>
+    }
+    <small class="text-muted">@v.Fecha.ToLocalTime()</small>
+    @foreach (var r in respuestasVal.Where(x => x.ParentId == v.Id))
+    {
+      var rUrl = ImageUploadService.PerfilUrl(r.Autor);
+      <div class="ms-4 mt-2 p-2 border-start border-3">
+        <strong>@ImageUploadService.NombrePublico(r.Autor)</strong>
+        <span class="text-muted">→ @(r.RespuestaAUsuarioId == v.AutorId ? ImageUploadService.NombrePublico(v.Autor) : "")</span><br />
+        @r.Comentario<br />
+        <small class="text-muted">@r.Fecha.ToLocalTime()</small>
+      </div>
+    }
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+      <form asp-controller="Feed" asp-action="ResponderValoracion" asp-route-valoracionId="@v.Id" method="post" class="mt-2">
+        @Html.AntiForgeryToken()
+        <div class="input-group input-group-sm"><input name="comentario" class="form-control" placeholder="Responder…" /><button class="btn btn-outline-secondary">Responder</button></div>
+      </form>
+    }
+  </div></div>
+}

@@ -1,6 +1,14 @@
 ﻿@* Página de inicio *@
 @model IEnumerable<SkillLink_dotnet.Models.Publicacion>
 @{ ViewData["Title"] = "Inicio"; }
+@if (ViewBag.DbDown == true)
+{
+  <div class="alert alert-warning" role="alert">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    Sin conexión a MySQL: la página carga en modo vista previa sin publicaciones.
+    Configure <code>ConnectionStrings:DefaultConnection</code> e instale MySQL para ver datos reales.
+  </div>
+}
 <div class="row align-items-center g-4 mb-4">
   <div class="col-md-6">
     <img src="/img/hero-trabajo.png" alt="Trabajadores" class="sk-hero-img" />

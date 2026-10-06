@@ -29,6 +29,7 @@ wwwroot/uploads/**
 session-*.md
 Lista1OpenCode.md
 secrets.json
+CREDENCIALES-DEMOS.md
 
 ## OS / editores
 .DS_Store

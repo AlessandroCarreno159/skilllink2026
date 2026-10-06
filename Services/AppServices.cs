@@ -24,13 +24,44 @@ public sealed class ReputacionService(ApplicationDbContext db)
     }
 }
 
-public sealed class NotificacionService(ApplicationDbContext db)
+public sealed class NotificacionService(
+    ApplicationDbContext db,
+    IConfiguration config,
+    IHttpClientFactory http,
+    ILogger<NotificacionService> logger)
 {
     public async Task CrearAsync(string usuarioId, string titulo, string mensaje, string? enlace = null)
     {
         db.Notificaciones.Add(new Models.Notificacion
         { UsuarioId = usuarioId, Titulo = titulo, Mensaje = mensaje, Enlace = enlace });
         await db.SaveChangesAsync();
+        // Tiempo real vía PieSocket (un canal, el cliente filtra por usuario).
+        // Si no está configurado o falla, la campana sigue por polling.
+        var key = config["PieSocket:ApiKey"];
+        var secret = config["PieSocket:Secret"];
+        var channel = config["PieSocket:ChannelId"];
+        var endpoint = config["PieSocket:Endpoint"] ?? "wss://free.nyc1.piesocket.com";
+        if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(secret) || string.IsNullOrWhiteSpace(channel))
+            return;
+        try
+        {
+            // Misma API v3 que el WS del navegador: POST al clúster con `channel`.
+            var baseUrl = endpoint.Replace("wss://", "https://").Replace("ws://", "http://").TrimEnd('/');
+            var client = http.CreateClient();
+            using var resp = await client.PostAsJsonAsync(baseUrl + "/api/publish",
+                new
+                {
+                    key,
+                    secret,
+                    channel,
+                    message = new { usuarioId, titulo, mensaje, enlace }
+                });
+            resp.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "PieSocket: no se pudo publicar la notificación.");
+        }
     }
 
     public Task<int> NoLeidasAsync(string usuarioId)

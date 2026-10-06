@@ -3,16 +3,21 @@ using System.ComponentModel.DataAnnotations;
 namespace SkillLink_dotnet.Models;
 
 // Valoración cruzada 1-5. Equivale a tabla `comentarios`.
+// Las respuestas (ParentId != null) llevan PublicacionId null para no chocar
+// con el índice único (PublicacionId, AutorId); cuelgan del padre.
 public class ComentarioValoracion
 {
     public int Id { get; set; }
     [Required] public string AutorId { get; set; } = string.Empty;
+    public ApplicationUser? Autor { get; set; }
     [Required] public string DestinatarioId { get; set; } = string.Empty;
     [Range(1, 5)] public int? Calificacion { get; set; }
     [Required] public string Comentario { get; set; } = string.Empty;
     public bool Recomendacion { get; set; }
     public bool Activo { get; set; } = true;
     public int? PublicacionId { get; set; }
+    public int? ParentId { get; set; }
+    public string? RespuestaAUsuarioId { get; set; }
     public DateTime Fecha { get; set; } = DateTime.UtcNow;
 }
 
