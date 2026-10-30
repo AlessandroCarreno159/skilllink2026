@@ -1,21 +1,38 @@
 @* Admin: ver denuncias *@
-@model IEnumerable<SkillLink_dotnet.Models.Denuncia>
-@{ ViewData["Title"] = "Denuncias"; }
+@model IEnumerable<SkillLink_dotnet.ViewModels.DenunciaRiesgoVm>
+@{
+  ViewData["Title"] = "Denuncias";
+  var soloRiesgo = (bool)(ViewBag.SoloRiesgo ?? false);
+  var modo = ViewBag.Modo as string ?? "Heurístico";
+}
 <h2 class="sk-section-title">Denuncias</h2>
-<table class="table table-striped">
-  <thead><tr><th>Tipo</th><th>Objeto</th><th>Motivo</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+<div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+  <a asp-action="Denuncias" class="btn btn-sm @(soloRiesgo ? "btn-outline-secondary" : "btn-secondary")">Todas</a>
+  <a asp-action="Denuncias" asp-route-soloRiesgo="true" class="btn btn-sm @(soloRiesgo ? "btn-danger" : "btn-outline-danger")">Solo con riesgo</a>
+  <span class="badge bg-info text-dark">Clasificador: @modo</span>
+</div>
+<table class="table table-striped align-middle">
+  <thead><tr><th>Riesgo</th><th>Clase</th><th>Tipo</th><th>Objeto</th><th>Motivo</th><th>Texto</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
   <tbody>
-  @foreach (var d in Model)
+  @foreach (var v in Model)
   {
+    var d = v.Denuncia;
     <tr>
-      <td>@d.ObjetoTipo</td><td>@d.ObjetoId</td><td>@d.Motivo</td><td><span class="badge bg-secondary">@d.Estado</span></td><td>@d.Fecha.ToLocalTime()</td>
+      <td><span class="badge bg-@v.Badge" title="Spam @v.ProbabilidadSpam.ToString("P0") · Peligroso @v.ProbabilidadPeligroso.ToString("P0") · Basura @v.ProbabilidadBasura.ToString("P0")">@v.Nivel (@v.Probabilidad.ToString("P0"))</span></td>
+      <td><span class="badge bg-@v.BadgeClase">@v.Clase</span></td>
+      <td>@d.ObjetoTipo</td><td>@d.ObjetoId</td><td>@d.Motivo</td>
+      <td class="small">@v.Extracto</td>
+      <td><span class="badge bg-secondary">@d.Estado</span></td>
+      <td>@d.Fecha.ToLocalTime()</td>
       <td>
         @if (d.Estado == "pendiente")
         {
           <form asp-action="ResolverDenuncia" method="post" class="d-inline">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" value="@d.Id" />
-            <button name="accion" value="resolver" class="btn btn-sm btn-success">Resolver</button>
+            <button name="accion" value="resolver" class="btn btn-sm btn-success" title="Confirmar spam">Spam</button>
+            <button name="accion" value="peligroso" class="btn btn-sm btn-danger" title="Contenido peligroso">Peligroso</button>
+            <button name="accion" value="basura" class="btn btn-sm btn-warning">Basura</button>
             <button name="accion" value="desestimar" class="btn btn-sm btn-outline-secondary">Desestimar</button>
           </form>
         }
@@ -24,3 +41,7 @@
   }
   </tbody>
 </table>
+@if (!Model.Any())
+{
+  <div class="alert alert-info">No hay denuncias para mostrar.</div>
+}

@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using SkillLink_dotnet.Data;
 using SkillLink_dotnet.Models;
 using SkillLink_dotnet.Services;
+using SkillLink_dotnet.Services.Ml;
+using SkillLink_dotnet.ViewModels;
 
 namespace SkillLink_dotnet.Controllers;
 
@@ -41,7 +43,9 @@ public class AdminController(
     ApplicationDbContext db,
     UserManager<ApplicationUser> users,
     ImageUploadService uploads,
-    SkillLink.Services.AlgoliaService algolia) : Controller
+    SkillLink.Services.AlgoliaService algolia,
+    SpamClasificadorService spam,
+    ModeracionService moderacion) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> Usuarios(string estado = "pendiente")
@@ -87,39 +91,133 @@ public class AdminController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> Denuncias()
-        => View(await db.Denuncias.OrderByDescending(d => d.Fecha).ToListAsync());
+    public async Task<IActionResult> Denuncias(bool soloRiesgo = false)
+    {
+        var denuncias = await db.Denuncias.OrderByDescending(d => d.Fecha).ToListAsync();
+        var pubIds = denuncias.Where(d => d.ObjetoTipo == "publicacion").Select(d => d.ObjetoId).Distinct().ToList();
+        var comIds = denuncias.Where(d => d.ObjetoTipo == "comentario").Select(d => d.ObjetoId).Distinct().ToList();
+        var pubs = await db.Publicaciones.Where(p => pubIds.Contains(p.Id))
+            .Select(p => new { p.Id, p.Titulo, p.Contenido }).ToDictionaryAsync(x => x.Id);
+        var coms = await db.ComentariosHilo.Where(c => comIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.Comentario }).ToDictionaryAsync(x => x.Id);
 
-    // Resolver una denuncia: resuelta (se tomó acción) o desestimada.
+        var lista = denuncias.Select(d =>
+        {
+            var texto = d.ObjetoTipo switch
+            {
+                "publicacion" when pubs.TryGetValue(d.ObjetoId, out var p) => $"{p.Titulo} {p.Contenido}",
+                "comentario" when coms.TryGetValue(d.ObjetoId, out var c) => c.Comentario,
+                _ => d.Descripcion ?? string.Empty
+            };
+            var extracto = string.IsNullOrWhiteSpace(texto) ? "(sin texto disponible)" : texto.Trim();
+            if (extracto.Length > 120) extracto = extracto[..120] + "…";
+            var riesgo = string.IsNullOrWhiteSpace(texto)
+                ? new RiesgoContenido(0, 0, 0, 0, "Normal")
+                : spam.Predecir(texto);
+            return new DenunciaRiesgoVm(d, extracto, riesgo);
+        }).ToList();
+
+        if (soloRiesgo) lista = lista.Where(x => x.Riesgoso).ToList();
+        lista = lista.OrderByDescending(x => x.Denuncia.Estado == "pendiente")
+            .ThenByDescending(x => x.Probabilidad).ToList();
+        ViewBag.SoloRiesgo = soloRiesgo;
+        ViewBag.Modo = spam.Modo;
+        return View(lista);
+    }
+
+    // Resolver una denuncia: resuelta (spam), basura o desestimada.
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> ResolverDenuncia(int id, string accion)
     {
         var map = new Dictionary<string, string>
         {
-            ["resolver"] = "resuelta", ["desestimar"] = "desestimada"
+            ["resolver"] = "resuelta",
+            ["desestimar"] = "desestimada",
+            ["basura"] = "basura",
+            ["peligroso"] = "peligroso"
         };
         if (!map.TryGetValue(accion, out var estado))
         { TempData["Error"] = "Acción no válida."; return RedirectToAction(nameof(Denuncias)); }
         var d = await db.Denuncias.FindAsync(id);
         if (d is null) { TempData["Error"] = "Denuncia no encontrada."; return RedirectToAction(nameof(Denuncias)); }
         d.Estado = estado;
+        await moderacion.AplicarResolucionAsync(d, estado);
         var admin = await users.GetUserAsync(User);
         db.HistorialModeracion.Add(new HistorialModeracion
         {
-            UsuarioId = d.DenuncianteId, AdminId = admin?.Id,
+            UsuarioId = d.DenuncianteId == DenunciasSistema.Id ? (admin?.Id ?? d.DenuncianteId) : d.DenuncianteId,
+            AdminId = admin?.Id,
             Accion = "denuncia_" + accion, ObjetoTipo = d.ObjetoTipo, ObjetoId = d.ObjetoId
         });
         await db.SaveChangesAsync();
-        TempData["Success"] = $"Denuncia {estado}.";
+        TempData["Success"] = estado switch
+        {
+            "basura" => "Marcada como basura. El contenido quedó oculto.",
+            "peligroso" => "Marcada como peligrosa. El contenido quedó oculto.",
+            "resuelta" => "Confirmada como spam. El contenido quedó oculto.",
+            _ => $"Denuncia {estado}."
+        };
         return RedirectToAction(nameof(Denuncias));
     }
 
     [HttpGet]
-    public async Task<IActionResult> Publicaciones()
-        => View(await db.Publicaciones
+    public async Task<IActionResult> Publicaciones(bool soloRiesgo = false, int pagina = 1)
+    {
+        const int porPagina = 20;
+
+        var candidatos = await db.Publicaciones.AsNoTracking()
+            .Select(p => new
+            {
+                p.Id,
+                p.Titulo,
+                p.Contenido,
+                p.HabilidadesReq,
+                p.FechaCreacion
+            })
+            .ToListAsync();
+
+        var riesgos = candidatos.ToDictionary(
+            c => c.Id,
+            c => spam.Predecir($"{c.Titulo} {c.Contenido} {c.HabilidadesReq}"));
+
+        var totalRiesgo = riesgos.Values.Count(r => r.Probabilidad >= SpamRiesgo.Umbral);
+        var filtrados = soloRiesgo
+            ? candidatos.Where(c => riesgos[c.Id].Probabilidad >= SpamRiesgo.Umbral).ToList()
+            : candidatos;
+
+        var total = filtrados.Count;
+        var totalPaginas = Math.Max(1, (int)Math.Ceiling(total / (double)porPagina));
+        pagina = Math.Clamp(pagina, 1, totalPaginas);
+
+        var idsPagina = filtrados
+            .OrderByDescending(c => riesgos[c.Id].Probabilidad)
+            .ThenByDescending(c => c.FechaCreacion)
+            .ThenByDescending(c => c.Id)
+            .Skip((pagina - 1) * porPagina)
+            .Take(porPagina)
+            .Select(c => c.Id)
+            .ToList();
+
+        var pubs = await db.Publicaciones.AsNoTracking()
             .Include(p => p.Autor).ThenInclude(a => a!.Perfil)
             .Include(p => p.Autor).ThenInclude(a => a!.Empresa)
-            .OrderByDescending(p => p.FechaCreacion).Take(100).ToListAsync());
+            .Where(p => idsPagina.Contains(p.Id))
+            .ToListAsync();
+        var pubsPorId = pubs.ToDictionary(p => p.Id);
+        var lista = idsPagina
+            .Where(pubsPorId.ContainsKey)
+            .Select(id => new PublicacionRiesgoVm(pubsPorId[id], riesgos[id]))
+            .ToList();
+
+        ViewBag.Pagina = pagina;
+        ViewBag.TotalPaginas = totalPaginas;
+        ViewBag.Total = total;
+        ViewBag.TotalGeneral = candidatos.Count;
+        ViewBag.TotalRiesgo = totalRiesgo;
+        ViewBag.SoloRiesgo = soloRiesgo;
+        ViewBag.Modo = spam.Modo;
+        return View(lista);
+    }
 
     // Solo el admin edita nombres (NombreCompleto/RazonSocial).
     [HttpGet]

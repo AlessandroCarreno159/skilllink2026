@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SkillLink_dotnet.Data;
 using SkillLink_dotnet.Models;
 using SkillLink_dotnet.Services;
+using SkillLink_dotnet.Services.Ml;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {
     o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    o.KnownNetworks.Clear();
+    o.KnownIPNetworks.Clear();
     o.KnownProxies.Clear();
 });
 
@@ -55,6 +56,8 @@ builder.Services.AddScoped<ImageUploadService>();
 builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, LegacyPasswordHasher>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<SkillLink.Services.AlgoliaService>();
+builder.Services.AddSingleton<SpamClasificadorService>();
+builder.Services.AddScoped<ModeracionService>();
 
 var app = builder.Build();
 
@@ -114,6 +117,113 @@ try
 catch (Exception ex)
 {
     app.Logger.LogWarning(ex, "Seed inicial omitido: no se pudo conectar a MySQL. La app arranca igual.");
+}
+
+// Entrenamiento de los clasificadores de spam, basura y peligroso: `dotnet run -- --train-spam-ml`.
+if (args.Contains("--train-spam-ml"))
+{
+    var csvSpam = Path.Combine(app.Environment.ContentRootPath, "Data", "ml_spam_seed.csv");
+    var csvBasura = Path.Combine(app.Environment.ContentRootPath, "Data", "ml_basura_seed.csv");
+    var csvPeligroso = Path.Combine(app.Environment.ContentRootPath, "Data", "ml_peligroso_seed.csv");
+    var modeloSpamRel = app.Configuration["Ml:SpamModelPath"] ?? "ML/spam-model.zip";
+    var modeloBasuraRel = app.Configuration["Ml:BasuraModelPath"] ?? "ML/basura-model.zip";
+    var modeloPeligrosoRel = app.Configuration["Ml:PeligrosoModelPath"] ?? "ML/peligroso-model.zip";
+    var modeloSpamPath = Path.IsPathRooted(modeloSpamRel) ? modeloSpamRel : Path.Combine(app.Environment.ContentRootPath, modeloSpamRel);
+    var modeloBasuraPath = Path.IsPathRooted(modeloBasuraRel) ? modeloBasuraRel : Path.Combine(app.Environment.ContentRootPath, modeloBasuraRel);
+    var modeloPeligrosoPath = Path.IsPathRooted(modeloPeligrosoRel) ? modeloPeligrosoRel : Path.Combine(app.Environment.ContentRootPath, modeloPeligrosoRel);
+    var feedbackSpam = new List<SpamEjemplo>();
+    var feedbackBasura = new List<SpamEjemplo>();
+    var feedbackPeligroso = new List<SpamEjemplo>();
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var resueltas = await db.Denuncias
+            .Where(d => d.Estado == "resuelta" || d.Estado == "desestimada" || d.Estado == "basura" || d.Estado == "peligroso")
+            .ToListAsync();
+        var pubIds = resueltas.Where(d => d.ObjetoTipo == "publicacion").Select(d => d.ObjetoId).Distinct().ToList();
+        var comIds = resueltas.Where(d => d.ObjetoTipo == "comentario").Select(d => d.ObjetoId).Distinct().ToList();
+        var pubs = await db.Publicaciones.Where(p => pubIds.Contains(p.Id))
+            .Select(p => new { p.Id, p.Titulo, p.Contenido }).ToDictionaryAsync(x => x.Id);
+        var coms = await db.ComentariosHilo.Where(c => comIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.Comentario }).ToDictionaryAsync(x => x.Id);
+        foreach (var d in resueltas)
+        {
+            string? texto = d.ObjetoTipo switch
+            {
+                "publicacion" when pubs.TryGetValue(d.ObjetoId, out var p) => $"{p.Titulo} {p.Contenido}",
+                "comentario" when coms.TryGetValue(d.ObjetoId, out var c) => c.Comentario,
+                _ => null
+            };
+            if (string.IsNullOrWhiteSpace(texto)) continue;
+
+            if (d.Estado == "resuelta")
+            {
+                feedbackSpam.Add(new SpamEjemplo(texto, true));
+                feedbackBasura.Add(new SpamEjemplo(texto, false));
+                feedbackPeligroso.Add(new SpamEjemplo(texto, false));
+            }
+            else if (d.Estado == "basura")
+            {
+                feedbackBasura.Add(new SpamEjemplo(texto, true));
+                feedbackSpam.Add(new SpamEjemplo(texto, false));
+                feedbackPeligroso.Add(new SpamEjemplo(texto, false));
+            }
+            else if (d.Estado == "peligroso")
+            {
+                feedbackPeligroso.Add(new SpamEjemplo(texto, true));
+                feedbackSpam.Add(new SpamEjemplo(texto, false));
+                feedbackBasura.Add(new SpamEjemplo(texto, false));
+            }
+            else
+            {
+                feedbackSpam.Add(new SpamEjemplo(texto, false));
+                feedbackBasura.Add(new SpamEjemplo(texto, false));
+                feedbackPeligroso.Add(new SpamEjemplo(texto, false));
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "No se pudieron leer denuncias resueltas; se entrena solo con los CSV.");
+    }
+
+    try
+    {
+        var res = SpamModelTrainer.Entrenar(csvSpam, modeloSpamPath, feedbackSpam);
+        app.Logger.LogInformation(
+            "Modelo de spam entrenado: {Filas} filas ({Spam} spam / {Ham} normales), accuracy={Accuracy:P1}, AUC={Auc:P1}, F1={F1:P1}.",
+            res.Filas, res.Spam, res.Ham, res.Accuracy, res.Auc, res.F1);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "No se pudo entrenar el modelo de spam.");
+    }
+
+    try
+    {
+        var res = SpamModelTrainer.Entrenar(csvBasura, modeloBasuraPath, feedbackBasura);
+        app.Logger.LogInformation(
+            "Modelo de basura entrenado: {Filas} filas ({Basura} basura / {Ham} normales), accuracy={Accuracy:P1}, AUC={Auc:P1}, F1={F1:P1}.",
+            res.Filas, res.Spam, res.Ham, res.Accuracy, res.Auc, res.F1);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "No se pudo entrenar el modelo de basura.");
+    }
+
+    try
+    {
+        var res = SpamModelTrainer.Entrenar(csvPeligroso, modeloPeligrosoPath, feedbackPeligroso);
+        app.Logger.LogInformation(
+            "Modelo de peligroso entrenado: {Filas} filas ({Peligroso} peligrosos / {Ham} normales), accuracy={Accuracy:P1}, AUC={Auc:P1}, F1={F1:P1}.",
+            res.Filas, res.Spam, res.Ham, res.Accuracy, res.Auc, res.F1);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "No se pudo entrenar el modelo de peligroso.");
+    }
+    return;
 }
 
 // Reindexado único a Algolia: `dotnet run -- --reindex` (indexa las activas y sale).

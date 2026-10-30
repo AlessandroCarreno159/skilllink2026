@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using SkillLink_dotnet.Models;
+using SkillLink_dotnet.Services.Ml;
 
 namespace SkillLink_dotnet.ViewModels;
 
@@ -97,4 +99,30 @@ public class EmpresaDatosVm
     public string? Telefono { get; set; }
     public string? Sector { get; set; }
     public string? Descripcion { get; set; }
+}
+
+public sealed record DenunciaRiesgoVm(Denuncia Denuncia, string Extracto, RiesgoContenido Riesgo)
+{
+    public double Probabilidad => Riesgo.Probabilidad;
+    public double ProbabilidadSpam => Riesgo.ProbabilidadSpam;
+    public double ProbabilidadBasura => Riesgo.ProbabilidadBasura;
+    public double ProbabilidadPeligroso => Riesgo.ProbabilidadPeligroso;
+    public string Clase => Riesgo.Clase;
+    public string Nivel => Riesgo.Nivel;
+    public string Badge => Riesgo.Badge;
+    public string BadgeClase => Riesgo.BadgeClase;
+    public bool Riesgoso => Riesgo.Probabilidad >= SpamRiesgo.Umbral;
+}
+
+public sealed record PublicacionRiesgoVm(Publicacion Publicacion, RiesgoContenido Riesgo)
+{
+    public double Probabilidad => Riesgo.Probabilidad;
+    public double ProbabilidadSpam => Riesgo.ProbabilidadSpam;
+    public double ProbabilidadBasura => Riesgo.ProbabilidadBasura;
+    public double ProbabilidadPeligroso => Riesgo.ProbabilidadPeligroso;
+    public string Clase => Riesgo.Clase;
+    public string Nivel => Riesgo.Nivel;
+    public string Badge => Riesgo.Badge;
+    public string BadgeClase => Riesgo.BadgeClase;
+    public bool Riesgoso => Riesgo.Probabilidad >= SpamRiesgo.Umbral;
 }

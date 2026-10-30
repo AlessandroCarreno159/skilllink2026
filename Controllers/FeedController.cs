@@ -6,12 +6,13 @@ using SkillLink_dotnet.Data;
 using SkillLink_dotnet.Filters;
 using SkillLink_dotnet.Models;
 using SkillLink_dotnet.Services;
+using SkillLink_dotnet.Services.Ml;
 using SkillLink_dotnet.ViewModels;
 
 namespace SkillLink_dotnet.Controllers;
 
 /// <summary>Feed laboral: listar / nueva / detalle / comentar (feed.py).</summary>
-public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser> users, ImageUploadService uploads, SkillLink.Services.AlgoliaService algolia, ReputacionService reputacion) : Controller
+public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser> users, ImageUploadService uploads, SkillLink.Services.AlgoliaService algolia, ReputacionService reputacion, ModeracionService moderacion) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> Index(string? seccion = "laboral", string? tipo = null, string? q = null, string? ciudad = null, string? modalidad = null, string? categoria = null, int? estrellas = null, string? opCalif = ">=", int pagina = 1)
@@ -112,6 +113,14 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
     {
         if (!ModelState.IsValid) return View(vm);
         var yo = (await users.GetUserAsync(User))!;
+        var textoModeracion = $"{vm.Titulo} {vm.Contenido} {vm.HabilidadesReq}";
+        var riesgo = moderacion.Evaluar(textoModeracion);
+        if (moderacion.BloqueaPublicacion(riesgo))
+        {
+            ModelState.AddModelError(nameof(vm.Contenido),
+                "La publicación no se publicó: el clasificador la marcó como contenido peligroso.");
+            return View(vm);
+        }
         string? imagen = null;
         if (vm.Imagen is not null && vm.Imagen.Length > 0)
         {
@@ -130,9 +139,12 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
         };
         db.Publicaciones.Add(pub);
         await db.SaveChangesAsync();
+        await moderacion.RegistrarSiRiesgosoAsync("publicacion", pub.Id, yo.Id, riesgo);
         // Indexación externa (no bloquea ni rompe la creación si Algolia falla).
         await algolia.IndexPublicacionAsync(pub);
-        TempData["Success"] = "Publicación creada.";
+        TempData["Success"] = riesgo.Probabilidad >= SpamRiesgo.Umbral
+            ? $"Publicación creada. Quedó en revisión automática ({riesgo.Clase})."
+            : "Publicación creada.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -270,9 +282,86 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
     {
         var yo = (await users.GetUserAsync(User))!;
         if (string.IsNullOrWhiteSpace(comentario)) { TempData["Warning"] = "Comentario vacío."; return RedirectToAction(nameof(Details), new { id }); }
-        db.ComentariosHilo.Add(new ComentarioPublicacion
-        { PublicacionId = id, AutorId = yo.Id, Comentario = comentario.Trim(), ParentId = parentId });
+        var texto = comentario.Trim();
+        var riesgo = moderacion.Evaluar(texto);
+        if (moderacion.BloqueaPublicacion(riesgo))
+        {
+            TempData["Error"] = "El comentario no se publicó: el clasificador lo marcó como contenido peligroso.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+        var nuevo = new ComentarioPublicacion
+        { PublicacionId = id, AutorId = yo.Id, Comentario = texto, ParentId = parentId };
+        db.ComentariosHilo.Add(nuevo);
         await db.SaveChangesAsync();
+        await moderacion.RegistrarSiRiesgosoAsync("comentario", nuevo.Id, yo.Id, riesgo);
+        if (riesgo.Probabilidad >= SpamRiesgo.Umbral)
+            TempData["Info"] = $"Comentario publicado. Quedó en revisión automática ({riesgo.Clase}).";
         return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    [Authorize, CuentaActiva]
+    public async Task<IActionResult> Denunciar(int publicacionId, string motivo, string? descripcion = null)
+    {
+        var pub = await db.Publicaciones.FirstOrDefaultAsync(p => p.Id == publicacionId && p.Activa);
+        if (pub is null) return NotFound();
+        var yo = (await users.GetUserAsync(User))!;
+        if (pub.AutorId == yo.Id)
+        {
+            TempData["Info"] = "No puedes denunciar tu propia publicación.";
+            return RedirectToAction(nameof(Details), new { id = publicacionId });
+        }
+        return await RegistrarDenunciaAsync("publicacion", publicacionId, motivo, descripcion, publicacionId);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    [Authorize, CuentaActiva]
+    public async Task<IActionResult> DenunciarComentario(int comentarioId, int publicacionId, string motivo, string? descripcion = null)
+    {
+        var comentario = await db.ComentariosHilo.FirstOrDefaultAsync(c =>
+            c.Id == comentarioId && c.Activo && c.PublicacionId == publicacionId);
+        if (comentario is null) return NotFound();
+        var yo = (await users.GetUserAsync(User))!;
+        if (comentario.AutorId == yo.Id)
+        {
+            TempData["Info"] = "No puedes denunciar tu propio comentario.";
+            return RedirectToAction(nameof(Details), new { id = publicacionId });
+        }
+        return await RegistrarDenunciaAsync("comentario", comentarioId, motivo, descripcion, publicacionId);
+    }
+
+    private async Task<IActionResult> RegistrarDenunciaAsync(
+        string objetoTipo, int objetoId, string motivo, string? descripcion, int publicacionId)
+    {
+        var yo = (await users.GetUserAsync(User))!;
+        var motivoNormalizado = (motivo ?? string.Empty).Trim().ToLowerInvariant();
+        string[] motivos = { "spam", "estafa", "ofensivo", "peligroso", "falso", "basura", "otro" };
+        if (!motivos.Contains(motivoNormalizado))
+        {
+            TempData["Warning"] = "Seleccione un motivo válido.";
+            return RedirectToAction(nameof(Details), new { id = publicacionId });
+        }
+        var yaExiste = await db.Denuncias.AnyAsync(d =>
+            d.DenuncianteId == yo.Id && d.ObjetoTipo == objetoTipo &&
+            d.ObjetoId == objetoId && d.Estado == "pendiente");
+        if (yaExiste)
+        {
+            TempData["Info"] = "Ya reportaste este contenido. Está pendiente de revisión.";
+            return RedirectToAction(nameof(Details), new { id = publicacionId });
+        }
+        var detalle = string.IsNullOrWhiteSpace(descripcion) ? null : descripcion.Trim();
+        if (detalle is { Length: > 500 }) detalle = detalle[..500];
+        db.Denuncias.Add(new Denuncia
+        {
+            DenuncianteId = yo.Id,
+            ObjetoTipo = objetoTipo,
+            ObjetoId = objetoId,
+            Motivo = motivoNormalizado,
+            Descripcion = detalle,
+            Estado = "pendiente"
+        });
+        await db.SaveChangesAsync();
+        TempData["Success"] = "Denuncia enviada. El equipo de moderación la revisará.";
+        return RedirectToAction(nameof(Details), new { id = publicacionId });
     }
 }
