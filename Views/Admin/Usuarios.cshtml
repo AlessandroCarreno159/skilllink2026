@@ -16,7 +16,13 @@
       <td>@u.Dni</td>
       <td>@SkillLink_dotnet.Services.ImageUploadService.NombrePublico(u)</td>
       <td>@u.Email</td><td>@u.Rol</td>
-      <td><span class="badge bg-secondary">@u.EstadoCuenta</span></td>
+      <td>
+        <span class="badge bg-secondary">@u.EstadoCuenta</span>
+        @if (u.Sospechoso)
+        {
+          <span class="badge bg-danger" title="Faltas de moderación: @u.FaltasModeracion">Sospechoso</span>
+        }
+      </td>
       <td>
         <a asp-action="EditarNombre" asp-route-id="@u.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Nombre</a>
         <form asp-action="Gestionar" method="post" class="d-inline">

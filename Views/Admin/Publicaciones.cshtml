@@ -1,15 +1,35 @@
 @* Admin: moderar publicaciones (eliminar) *@
-@model IEnumerable<SkillLink_dotnet.Models.Publicacion>
+@model IEnumerable<SkillLink_dotnet.ViewModels.PublicacionRiesgoVm>
 @inject ImageUploadService Uploads
-@{ ViewData["Title"] = "Moderar publicaciones"; }
+@{
+  ViewData["Title"] = "Moderar publicaciones";
+  var soloRiesgo = (bool)(ViewBag.SoloRiesgo ?? false);
+  var modo = ViewBag.Modo as string ?? "Heurístico";
+  var pagina = (int)(ViewBag.Pagina ?? 1);
+  var totalPaginas = (int)(ViewBag.TotalPaginas ?? 1);
+  var total = (int)(ViewBag.Total ?? 0);
+  var totalGeneral = (int)(ViewBag.TotalGeneral ?? 0);
+  var totalRiesgo = (int)(ViewBag.TotalRiesgo ?? 0);
+}
 <h2 class="sk-section-title">Publicaciones</h2>
 <p class="text-muted">El borrado es definitivo: elimina la publicación con sus solicitudes y comentarios.</p>
+<div class="d-flex gap-2 align-items-center mb-2 flex-wrap">
+  <a asp-action="Publicaciones" asp-route-pagina="1" class="btn btn-sm @(soloRiesgo ? "btn-outline-secondary" : "btn-secondary")">Todas</a>
+  <a asp-action="Publicaciones" asp-route-soloRiesgo="true" asp-route-pagina="1" class="btn btn-sm @(soloRiesgo ? "btn-danger" : "btn-outline-danger")">Solo con riesgo</a>
+  <span class="badge bg-info text-dark">Clasificador: @modo</span>
+</div>
+<p class="text-muted small">
+  @total resultado(s) de @totalGeneral publicaciones · @totalRiesgo con riesgo · página @pagina de @totalPaginas
+</p>
 <table class="table table-striped align-middle">
-  <thead><tr><th></th><th>Tipo</th><th>Título</th><th>Autor</th><th>Fecha</th><th></th></tr></thead>
+  <thead><tr><th>Riesgo</th><th>Clase</th><th></th><th>Tipo</th><th>Título</th><th>Autor</th><th>Fecha</th><th></th></tr></thead>
   <tbody>
-  @foreach (var p in Model)
+  @foreach (var v in Model)
   {
+    var p = v.Publicacion;
     <tr>
+      <td><span class="badge bg-@v.Badge" title="Spam @v.ProbabilidadSpam.ToString("P0") · Peligroso @v.ProbabilidadPeligroso.ToString("P0") · Basura @v.ProbabilidadBasura.ToString("P0")">@v.Nivel (@v.Probabilidad.ToString("P0"))</span></td>
+      <td><span class="badge bg-@v.BadgeClase">@v.Clase</span></td>
       <td><img src="@Uploads.Url(p.Imagen)" alt="" style="width:64px;height:48px;object-fit:cover" class="rounded" loading="lazy" /></td>
       <td><span class="sk-badge-tipo">@p.Tipo</span></td>
       <td><a asp-controller="Feed" asp-action="Details" asp-route-id="@p.Id">@(p.Titulo ?? "(sin título)")</a></td>
@@ -28,7 +48,7 @@
       </td>
       <td>@p.FechaCreacion.ToLocalTime()</td>
       <td>
-        <form asp-action="EliminarPublicacion" asp-route-id="@p.Id" method="post" class="d-inline" onsubmit="return confirm('Eliminar DEFINITIVAMENTE esta publicación?');">
+        <form asp-action="EliminarPublicacion" asp-route-id="@p.Id" asp-route-returnUrl="@(Context.Request.Path.ToString() + Context.Request.QueryString.ToString())" method="post" class="d-inline" onsubmit="return confirm('Eliminar DEFINITIVAMENTE esta publicación?');">
           @Html.AntiForgeryToken()
           <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Eliminar</button>
         </form>
@@ -37,3 +57,44 @@
   }
   </tbody>
 </table>
+@if (totalPaginas > 1)
+{
+  var desde = Math.Max(1, pagina - 2);
+  var hasta = Math.Min(totalPaginas, pagina + 2);
+  <nav aria-label="Paginación de publicaciones" class="mt-3">
+    <ul class="pagination justify-content-center flex-wrap">
+      <li class="page-item @(pagina <= 1 ? "disabled" : "")">
+        <a class="page-link" asp-action="Publicaciones" asp-route-pagina="@(pagina - 1)" asp-route-soloRiesgo="@(soloRiesgo ? "true" : null)" aria-label="Anterior"><span aria-hidden="true">&laquo;</span></a>
+      </li>
+      @if (desde > 1)
+      {
+        <li class="page-item"><a class="page-link" asp-action="Publicaciones" asp-route-pagina="1" asp-route-soloRiesgo="@(soloRiesgo ? "true" : null)">1</a></li>
+        @if (desde > 2)
+        {
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+        }
+      }
+      @for (var i = desde; i <= hasta; i++)
+      {
+        <li class="page-item @(i == pagina ? "active" : "")">
+          <a class="page-link" asp-action="Publicaciones" asp-route-pagina="@i" asp-route-soloRiesgo="@(soloRiesgo ? "true" : null)">@i</a>
+        </li>
+      }
+      @if (hasta < totalPaginas)
+      {
+        @if (hasta < totalPaginas - 1)
+        {
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+        }
+        <li class="page-item"><a class="page-link" asp-action="Publicaciones" asp-route-pagina="@totalPaginas" asp-route-soloRiesgo="@(soloRiesgo ? "true" : null)">@totalPaginas</a></li>
+      }
+      <li class="page-item @(pagina >= totalPaginas ? "disabled" : "")">
+        <a class="page-link" asp-action="Publicaciones" asp-route-pagina="@(pagina + 1)" asp-route-soloRiesgo="@(soloRiesgo ? "true" : null)" aria-label="Siguiente"><span aria-hidden="true">&raquo;</span></a>
+      </li>
+    </ul>
+  </nav>
+}
+@if (!Model.Any())
+{
+  <div class="alert alert-info">No hay publicaciones para mostrar.</div>
+}

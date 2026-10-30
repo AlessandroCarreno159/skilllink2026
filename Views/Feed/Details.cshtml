@@ -100,6 +100,30 @@
         </div>
       </form>
     }
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+      <button class="btn btn-sm btn-outline-secondary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#denunciarPublicacion" aria-expanded="false" aria-controls="denunciarPublicacion">
+        <i class="bi bi-flag"></i> Denunciar publicación
+      </button>
+      <div class="collapse mb-3" id="denunciarPublicacion">
+        <form asp-controller="Feed" asp-action="Denunciar" method="post" class="card p-3">
+          @Html.AntiForgeryToken()
+          <input type="hidden" name="publicacionId" value="@Model.Id" />
+          <label class="form-label small mb-1" for="motivo-pub">Motivo</label>
+          <select id="motivo-pub" name="motivo" class="form-select form-select-sm mb-2" required>
+            <option value="spam">Spam</option>
+            <option value="estafa">Estafa o fraude</option>
+            <option value="ofensivo">Contenido ofensivo</option>
+            <option value="peligroso">Amenaza o contenido peligroso</option>
+            <option value="falso">Información falsa</option>
+            <option value="basura">Contenido basura o sin sentido</option>
+            <option value="otro">Otro</option>
+          </select>
+          <textarea name="descripcion" class="form-control form-control-sm mb-2" rows="2" maxlength="500" placeholder="Detalle (opcional)"></textarea>
+          <button class="btn btn-sm btn-outline-danger" type="submit">Enviar denuncia</button>
+        </form>
+      </div>
+    }
   </div>
   <div class="col-lg-8">
     <div class="sk-detail-panel p-4">
@@ -159,6 +183,29 @@
         <br />
         @c.Comentario<br />
         <small class="text-muted">@c.Fecha.ToLocalTime()</small>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+          <details class="mt-1">
+            <summary class="small text-muted">Denunciar comentario</summary>
+            <form asp-controller="Feed" asp-action="DenunciarComentario" method="post" class="mt-2">
+              @Html.AntiForgeryToken()
+              <input type="hidden" name="comentarioId" value="@c.Id" />
+              <input type="hidden" name="publicacionId" value="@Model.Id" />
+              <div class="d-flex gap-2 flex-wrap">
+                <select name="motivo" class="form-select form-select-sm" style="max-width:200px" required>
+                  <option value="spam">Spam</option>
+                  <option value="estafa">Estafa o fraude</option>
+                  <option value="ofensivo">Contenido ofensivo</option>
+                  <option value="peligroso">Amenaza o contenido peligroso</option>
+                  <option value="falso">Información falsa</option>
+                  <option value="basura">Contenido basura o sin sentido</option>
+                  <option value="otro">Otro</option>
+                </select>
+                <button class="btn btn-sm btn-outline-danger" type="submit">Enviar</button>
+              </div>
+            </form>
+          </details>
+        }
       </div>
     </div></div>
   }
