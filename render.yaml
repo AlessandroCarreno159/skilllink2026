@@ -14,9 +14,9 @@ services:
         value: true
       - key: ConnectionStrings__DefaultConnection
         sync: false
-      # Versión del MySQL en la nube (ej. 8.0.36). Debe coincidir con el servidor.
+      # Versión del MySQL en la nube (ej. 8.0.22). Debe coincidir con el servidor.
       - key: MySql__ServerVersion
-        value: 8.0.36
+        value: 8.0.22
       - key: AdminSeed__Email
         value: admin@skilllink.local
       - key: AdminSeed__Dni
