@@ -9,9 +9,9 @@ services:
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
-      # Solo primer deploy (crea tablas + seed). Luego poner en false o quitarla.
+      # Activar solo en un deploy que requiera aplicar migraciones.
       - key: RUN_MIGRATIONS
-        value: true
+        value: false
       - key: ConnectionStrings__DefaultConnection
         sync: false
       # Versión del MySQL en la nube (ej. 8.0.22). Debe coincidir con el servidor.

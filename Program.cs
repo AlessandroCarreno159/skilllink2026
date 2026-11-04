@@ -110,6 +110,24 @@ app.Use(async (ctx, next) =>
     await next();
 });
 
+// Siembra controlada de publicaciones: `dotnet run -- --seed-150 [--dry-run]`.
+if (args.Contains("--seed-150"))
+{
+    using var seedScope = app.Services.CreateScope();
+    var seedDb = seedScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var seedClasificador = seedScope.ServiceProvider.GetRequiredService<SpamClasificadorService>();
+    try
+    {
+        await PublicacionSeed.EjecutarAsync(seedDb, seedClasificador, args.Contains("--dry-run"));
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"ERROR: {ex.Message}");
+        Environment.ExitCode = 1;
+    }
+    return;
+}
+
 try
 {
     await IdentitySeed.EnsureAsync(app.Services, app.Configuration);
