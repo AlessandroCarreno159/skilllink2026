@@ -13,6 +13,11 @@
       <td><span class="badge bg-secondary">@s.Estado</span></td>
       <td>@s.FechaPostulacion.ToLocalTime()</td>
       <td>
+        <button type="button" class="btn btn-sm btn-outline-primary me-1"
+                data-chat-user="@s.TrabajadorId"
+                data-chat-name="@(s.Trabajador?.Perfil?.NombreCompleto ?? s.Trabajador?.UserName ?? "Postulante")">
+          <i class="bi bi-chat-dots-fill"></i> Chatear
+        </button>
         <form asp-action="Gestionar" method="post" class="d-inline">
           @Html.AntiForgeryToken()
           <input type="hidden" name="id" value="@s.Id" />

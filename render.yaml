@@ -30,11 +30,11 @@ services:
         sync: false
       - key: Algolia__IndexName
         value: skilllink_index
-      - key: PieSocket__ApiKey
+      # Redis gestionado (Upstash/Redis Cloud) para el gateway Socket.io.
+      - key: Redis__Url
         sync: false
-      - key: PieSocket__Secret
+      # URL pública del gateway Node (servicio aparte) y secreto HMAC compartido.
+      - key: Realtime__Url
         sync: false
-      - key: PieSocket__ChannelId
-        value: "1"
-      - key: PieSocket__Endpoint
-        value: wss://free.blr2.piesocket.com
+      - key: Realtime__Secret
+        sync: false

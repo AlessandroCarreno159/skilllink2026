@@ -11,6 +11,11 @@
       <td><span class="badge bg-secondary">@s.Estado</span></td>
       <td>@s.FechaPostulacion.ToLocalTime()</td>
       <td>
+        <button type="button" class="btn btn-sm btn-outline-primary me-1"
+                data-chat-user="@p.AutorId"
+                data-chat-name="@(razon ?? "Empresa")">
+          <i class="bi bi-chat-dots-fill"></i> Chatear
+        </button>
         <form asp-controller="Solicitudes" asp-action="Eliminar" asp-route-id="@s.Id" method="post" class="d-inline">
           @Html.AntiForgeryToken()
           <button class="btn btn-sm btn-outline-danger">Eliminar</button>

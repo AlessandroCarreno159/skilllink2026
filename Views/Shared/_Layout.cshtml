@@ -117,22 +117,48 @@
         </div>
     </footer>
 
+    @if (User.Identity?.IsAuthenticated == true && !string.IsNullOrWhiteSpace(Cfg["Realtime:Url"]))
+    {
+        <div id="sk-chat-widget">
+            <button id="sk-chat-toggle" type="button" class="btn sk-chat-toggle" title="Mensajes en tiempo real">
+                <i class="bi bi-chat-dots-fill"></i>
+                <span id="sk-chat-badge" class="badge rounded-pill bg-danger d-none">0</span>
+            </button>
+            <div class="offcanvas offcanvas-end sk-chat-panel" tabindex="-1" id="skChatPanel" aria-labelledby="skChatTitle">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title" id="skChatTitle"><i class="bi bi-chat-dots-fill"></i> <span id="sk-chat-title">Mensajes</span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+                </div>
+                <div class="offcanvas-body d-flex flex-column">
+                    <p id="sk-chat-empty" class="text-muted small mb-0">
+                        Abre un chat desde una postulación o publicación para conversar en tiempo real.
+                    </p>
+                    <div id="sk-chat-messages" class="sk-chat-messages flex-grow-1"></div>
+                    <div id="sk-chat-typing" class="small text-muted"></div>
+                    <form id="sk-chat-form" class="mt-2 d-none">
+                        <div class="input-group">
+                            <input id="sk-chat-input" class="form-control" maxlength="2000" autocomplete="off" placeholder="Escribe un mensaje..." />
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-send-fill"></i></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/notificaciones.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    @if (User.Identity?.IsAuthenticated == true
-        && !string.IsNullOrWhiteSpace(Cfg["PieSocket:ApiKey"])
-        && !string.IsNullOrWhiteSpace(Cfg["PieSocket:ChannelId"]))
+    @if (User.Identity?.IsAuthenticated == true && !string.IsNullOrWhiteSpace(Cfg["Realtime:Url"]))
     {
-      <script>
-        window.__skUserId = "@User.FindFirstValue(ClaimTypes.NameIdentifier)";
-        window.__skPie = {
-          endpoint: "@(Cfg["PieSocket:Endpoint"] ?? "wss://free.nyc1.piesocket.com")",
-          key: "@Cfg["PieSocket:ApiKey"]",
-          channel: "@Cfg["PieSocket:ChannelId"]"
-        };
-      </script>
-      <script src="~/js/realtime.js" asp-append-version="true"></script>
+        <script>
+            window.__skRealtime = {
+                url: "@Cfg["Realtime:Url"]",
+                userId: "@User.FindFirstValue(ClaimTypes.NameIdentifier)"
+            };
+        </script>
+        <script src="@(Cfg["Realtime:Url"]!.TrimEnd('/'))/socket.io/socket.io.js"></script>
+        <script src="~/js/realtime-socket.js" asp-append-version="true"></script>
     }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
