@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <rect width="800" height="450" fill="#ede4ff"/>
+  <rect x="60" y="90" width="680" height="270" rx="16" fill="#d9c8f7"/>
+  <g fill="#7b53f5">
+    <circle cx="200" cy="200" r="46"/>
+    <circle cx="330" cy="200" r="46"/>
+    <circle cx="460" cy="200" r="46"/>
+    <circle cx="590" cy="200" r="46"/>
+  </g>
+  <g fill="#ffffff" font-family="Georgia,serif" font-size="40" text-anchor="middle">
+    <text x="200" y="215">◐</text>
+    <text x="330" y="215">◑</text>
+    <text x="460" y="215">◐</text>
+    <text x="590" y="215">◑</text>
+  </g>
+  <rect x="150" y="270" width="500" height="46" rx="10" fill="#7b53f5"/>
+  <text x="400" y="300" font-family="Georgia,serif" font-size="22" fill="#ffffff" text-anchor="middle">Conecta con talento</text>
+</svg>

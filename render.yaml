@@ -1,0 +1,45 @@
+# Blueprint de Render: https://render.com/docs/blueprint-spec
+# Crear el MySQL externo aparte (Clever Cloud / Aiven / propio) y pegar su
+# cadena en ConnectionStrings__DefaultConnection antes del primer deploy.
+services:
+  - type: web
+    name: skilllink
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      # Activar solo en un deploy que requiera aplicar migraciones.
+      - key: RUN_MIGRATIONS
+        value: false
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      # Versión del MySQL en la nube (ej. 8.0.22). Debe coincidir con el servidor.
+      - key: MySql__ServerVersion
+        value: 8.0.22
+      - key: AdminSeed__Email
+        value: admin@skilllink.local
+      - key: AdminSeed__Dni
+        value: "10000001"
+      # Contraseña del admin inicial. Rotarla/quitarla tras el primer login.
+      - key: AdminSeed__Password
+        sync: false
+      - key: Algolia__ApplicationId
+        value: ZUL3Y9M7QD
+      # Clave privilegiada SOLO para el servidor (indexación). Nunca llega al navegador.
+      # Si el servicio tenía Algolia__ApiKey, elimínela al migrar a este nombre.
+      - key: Algolia__IndexingApiKey
+        sync: false
+      # Search-Only API Key restringida (pública) usada por el buscador del frontend.
+      - key: Algolia__SearchApiKey
+        sync: false
+      - key: Algolia__IndexName
+        value: skilllink_index
+      - key: PieSocket__ApiKey
+        sync: false
+      - key: PieSocket__Secret
+        sync: false
+      - key: PieSocket__ChannelId
+        value: "1"
+      - key: PieSocket__Endpoint
+        value: wss://free.blr2.piesocket.com
