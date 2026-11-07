@@ -72,6 +72,8 @@
       return;
     }
 
+    if (clearBtn) clearBtn.hidden = input.value.length === 0;
+
     var appId = (root.getAttribute('data-app-id') || '').trim();
     var searchKey = (root.getAttribute('data-search-key') || '').trim();
     var indexName = (root.getAttribute('data-index-name') || 'skilllink_index').trim();

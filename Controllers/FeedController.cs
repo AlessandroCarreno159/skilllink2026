@@ -24,21 +24,14 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
         List<int>? idsAlgolia = null;
         if (!string.IsNullOrWhiteSpace(q))
         {
-            // Algolia primero (relevancia); si no está configurado o falla, LIKE en BD.
+            // La búsqueda del feed usa Algolia como único motor; sin fallback LIKE a BD.
             idsAlgolia = await algolia.SearchPublicacionIdsAsync(q, 50);
-            if (idsAlgolia is { Count: > 0 })
+            if (idsAlgolia is null || idsAlgolia.Count == 0)
             {
-                query = query.Where(p => idsAlgolia.Contains(p.Id));
-                ViewBag.UsaAlgolia = true;
-            }
-            else if (idsAlgolia is null)
-            {
-                query = query.Where(p => (p.Titulo + " " + p.Contenido + " " + (p.HabilidadesReq ?? "")).Contains(q));
-            }
-            else
-            {
-                // Algolia respondió sin coincidencias: resultado vacío.
-                ViewBag.UsaAlgolia = true;
+                ViewBag.UsaAlgolia = idsAlgolia is not null;
+                ViewBag.SearchError = idsAlgolia is null
+                    ? "La búsqueda no está disponible en este momento. Intenta nuevamente."
+                    : null;
                 ViewBag.CommentsCount = new Dictionary<int, int>();
                 ViewBag.Ratings = new Dictionary<int, (double Promedio, int Total)>();
                 ViewBag.Seccion = seccion; ViewBag.Q = q; ViewBag.Ciudad = ciudad; ViewBag.Tipo = tipo;
@@ -48,6 +41,8 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
                 ViewBag.Pagina = 1; ViewBag.TotalPaginas = 1; ViewBag.Total = 0;
                 return View(new List<Publicacion>());
             }
+            query = query.Where(p => idsAlgolia.Contains(p.Id));
+            ViewBag.UsaAlgolia = true;
         }
         if (!string.IsNullOrWhiteSpace(ciudad))
             query = query.Where(p => p.Autor!.Perfil!.Ciudad == ciudad || p.Autor!.Empresa!.Ciudad == ciudad);
