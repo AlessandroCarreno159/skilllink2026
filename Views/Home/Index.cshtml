@@ -1,16 +1,7 @@
 ﻿@* Página de inicio *@
 @model IEnumerable<SkillLink_dotnet.Models.Publicacion>
-@inject Microsoft.Extensions.Configuration.IConfiguration Cfg
 @{
   ViewData["Title"] = "Inicio";
-  // Nunca renderizar la clave privilegiada aunque se configure por error en SearchApiKey.
-  var algoliaSearchKey = Cfg["Algolia:SearchApiKey"];
-  var algoliaIndexingKey = Cfg["Algolia:IndexingApiKey"] ?? Cfg["Algolia:ApiKey"];
-  if (!string.IsNullOrWhiteSpace(algoliaSearchKey)
-      && string.Equals(algoliaSearchKey, algoliaIndexingKey))
-  {
-    algoliaSearchKey = null;
-  }
 }
 @if (ViewBag.DbDown == true)
 {
@@ -28,39 +19,7 @@
     <h1 class="sk-hero-title">Encuentra oportunidades.<br />Conecta con talento.</h1>
     <p class="mt-3">SkillLink es la plataforma peruana que conecta profesionales, técnicos, estudiantes y trabajadores con empresas y clientes.</p>
 
-    <div id="sk-search"
-         class="sk-search"
-         data-app-id="@Cfg["Algolia:ApplicationId"]"
-         data-search-key="@algoliaSearchKey"
-         data-index-name="@(Cfg["Algolia:IndexName"] ?? "skilllink_index")"
-         data-details-base="@Url.Action("Details", "Feed")"
-         data-feed-url="@Url.Action("Index", "Feed")">
-      <form class="sk-search-form" role="search" asp-controller="Feed" asp-action="Index" method="get" autocomplete="off">
-        <div class="sk-search-box">
-          <i class="bi bi-search" aria-hidden="true"></i>
-          <input type="search"
-                 id="inputBusqueda"
-                 name="q"
-                 class="sk-search-input"
-                 placeholder="Busca oficios, habilidades u oportunidades…"
-                 aria-label="Buscar publicaciones"
-                 aria-autocomplete="list"
-                 aria-controls="search-results-container"
-                 aria-expanded="false"
-                 autocomplete="off" />
-          <button type="button" class="sk-search-clear" data-sk-search-clear hidden aria-label="Limpiar búsqueda">
-            <i class="bi bi-x-circle-fill"></i>
-          </button>
-        </div>
-        <div id="search-results-container"
-             class="sk-search-results"
-             data-sk-search-results
-             role="listbox"
-             aria-label="Resultados de búsqueda"
-             aria-live="polite"
-             hidden></div>
-      </form>
-    </div>
+    <partial name="_BuscadorAlgolia" />
   </div>
 </div>
 <div class="sk-cta-banner p-4 p-md-5 mb-5">
