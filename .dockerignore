@@ -11,3 +11,12 @@ Backups/
 *.log
 *.md
 !README.md
+node_modules/
+npm-debug.log*
+.env
+.env.*
+!.env.example
+server.js
+package.json
+package-lock.json
+docker-compose.yml

@@ -2,6 +2,7 @@
 @model SkillLink_dotnet.Models.Publicacion
 @inject ImageUploadService Uploads
 @using SkillLink_dotnet.Services
+@using System.Security.Claims
 @{
   ViewData["Title"] = Model.Titulo ?? "Detalle";
   var autorUrl = ImageUploadService.PerfilUrl(Model.Autor);
@@ -55,6 +56,14 @@
     <p class="mb-1"><strong>Contacto:</strong></p>
     <p class="sk-meta mb-1"><i class="bi bi-envelope-fill"></i> @email</p>
     <p class="sk-meta mb-3"><i class="bi bi-telephone-fill"></i> @telefono</p>
+    @if (User.Identity?.IsAuthenticated == true && User.FindFirstValue(ClaimTypes.NameIdentifier) != Model.AutorId)
+    {
+      <button type="button" class="btn btn-sm btn-outline-primary mb-3"
+              data-chat-user="@Model.AutorId"
+              data-chat-name="@ImageUploadService.NombrePublico(Model.Autor)">
+        <i class="bi bi-chat-dots-fill"></i> Contactar por chat
+      </button>
+    }
     <div class="card p-3 mb-3">
       <h6 class="sk-serif mb-2"><i class="bi bi-star-fill sk-ic-star"></i> Dejar calificación</h6>
       @if (miVoto.HasValue)

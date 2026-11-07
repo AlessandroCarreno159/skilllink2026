@@ -16,7 +16,8 @@ namespace SkillLink_dotnet.Controllers;
 public class SolicitudesController(
     ApplicationDbContext db,
     UserManager<ApplicationUser> users,
-    NotificacionService notificaciones) : Controller
+    NotificacionService notificaciones,
+    RealtimePublisher realtime) : Controller
 {
     private Task<ApplicationUser?> ActualAsync() => users.GetUserAsync(User);
 
@@ -43,11 +44,12 @@ public class SolicitudesController(
             await db.SaveChangesAsync();
             await notificaciones.CrearAsync(pub.AutorId, "Nueva postulación recibida",
                 "Tiene una nueva postulación por revisar.", "/Solicitudes/Recibidas");
+            await PublicarPostulacionAsync(pub, yo.Id, existe.Id, existe.Mensaje);
             TempData["Success"] = "Postulación enviada correctamente.";
             return RedirectToAction("Details", "Feed", new { id = publicacionId });
         }
 
-        db.Solicitudes.Add(new Solicitud
+        var nueva = new Solicitud
         {
             PublicacionId = publicacionId,
             TrabajadorId = yo.Id,
@@ -55,12 +57,33 @@ public class SolicitudesController(
                 ? "Postulación con un clic - perfil y experiencia adjuntos." : mensaje!,
             IncluyeCv = true,
             Estado = EstadosSolicitud.Pendiente
-        });
+        };
+        db.Solicitudes.Add(nueva);
         await db.SaveChangesAsync();
         await notificaciones.CrearAsync(pub.AutorId, "Nueva postulación recibida",
             "Tiene una nueva postulación por revisar.", "/Solicitudes/Recibidas");
+        await PublicarPostulacionAsync(pub, yo.Id, nueva.Id, nueva.Mensaje);
         TempData["Success"] = "Postulación enviada correctamente.";
         return RedirectToAction("Details", "Feed", new { id = publicacionId });
+    }
+
+    private async Task PublicarPostulacionAsync(
+        Publicacion pub, string trabajadorId, int solicitudId, string? mensaje)
+    {
+        var trabajadorNombre = await db.Perfiles
+            .Where(p => p.UsuarioId == trabajadorId)
+            .Select(p => p.NombreCompleto)
+            .FirstOrDefaultAsync();
+
+        await realtime.PublishAsync("application:new", pub.AutorId, new
+        {
+            solicitudId,
+            publicacionId = pub.Id,
+            publicacionTitulo = pub.Titulo ?? $"Oferta #{pub.Id}",
+            trabajadorId,
+            trabajadorNombre = trabajadorNombre ?? "Un postulante",
+            mensaje
+        });
     }
 
     [HttpGet]
@@ -83,6 +106,8 @@ public class SolicitudesController(
     {
         var yo = (await ActualAsync())!;
         var lista = await db.Solicitudes
+            .Include(s => s.Publicacion)
+            .Include(s => s.Trabajador).ThenInclude(t => t!.Perfil)
             .Where(s => s.Publicacion!.AutorId == yo.Id && s.Activa)
             .OrderByDescending(s => s.FechaPostulacion).ToListAsync();
         return View(lista);
@@ -104,6 +129,12 @@ public class SolicitudesController(
         await db.SaveChangesAsync();
         await notificaciones.CrearAsync(s.TrabajadorId, $"Postulación {s.Estado}",
             $"Su postulación ha sido {s.Estado}.", "/Solicitudes/MisPostulaciones");
+        await realtime.PublishAsync("application:status", s.TrabajadorId, new
+        {
+            solicitudId = s.Id,
+            publicacionId = s.PublicacionId,
+            estado = s.Estado
+        });
         TempData["Success"] = $"Postulación {s.Estado}.";
         return RedirectToAction(nameof(Recibidas));
     }

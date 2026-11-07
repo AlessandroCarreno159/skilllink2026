@@ -50,6 +50,8 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddScoped<ReputacionService>();
 builder.Services.AddScoped<NotificacionService>();
+builder.Services.AddSingleton<RealtimePublisher>();
+builder.Services.AddSingleton<RealtimeTokenService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ImageUploadService>();
 // Hasher que acepta los bcrypt del sistema Flask original y los migra a PBKDF2 al hacer login.

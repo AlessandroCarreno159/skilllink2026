@@ -35,3 +35,10 @@ CREDENCIALES-DEMOS.md
 .DS_Store
 Thumbs.db
 desktop.ini
+
+## Node.js (gateway Socket.io/Redis)
+node_modules/
+npm-debug.log*
+.env
+.env.*
+!.env.example
