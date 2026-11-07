@@ -10,7 +10,7 @@ using SkillLink_dotnet.ViewModels;
 namespace SkillLink_dotnet.Controllers;
 
 [Authorize]
-public class WorkerController(ApplicationDbContext db, UserManager<ApplicationUser> users, ImageUploadService uploads) : Controller
+public class WorkerController(ApplicationDbContext db, UserManager<ApplicationUser> users, ImageUploadService uploads, SkillLink.Services.AlgoliaService algolia) : Controller
 {
     [HttpGet("/trabajador/registro/{userId}")]
     [AllowAnonymous]
@@ -148,11 +148,22 @@ public class WorkerController(ApplicationDbContext db, UserManager<ApplicationUs
         var yo = (await users.GetUserAsync(User))!;
         var perfil = await db.Perfiles.FirstOrDefaultAsync(p => p.UsuarioId == yo.Id);
         if (perfil is null) { TempData["Error"] = "Aún no tiene perfil."; return RedirectToAction(nameof(Perfil)); }
+        var ciudadAnterior = perfil.Ciudad;
         perfil.Ciudad = vm.Ciudad; perfil.Telefono = vm.Telefono;
         perfil.Especialidad = vm.Especialidad; perfil.Habilidades = vm.Habilidades;
         perfil.Disponibilidad = vm.Disponibilidad;
         perfil.Descripcion = string.IsNullOrWhiteSpace(vm.Descripcion) ? null : vm.Descripcion.Trim();
         await db.SaveChangesAsync();
+        // La ciudad forma parte del registro indexado; reindexar si cambió.
+        if (!string.Equals(ciudadAnterior, perfil.Ciudad, StringComparison.Ordinal))
+        {
+            var publicaciones = await db.Publicaciones
+                .Include(p => p.Autor).ThenInclude(a => a!.Perfil)
+                .Include(p => p.Autor).ThenInclude(a => a!.Empresa)
+                .Where(p => p.AutorId == yo.Id && p.Activa)
+                .ToListAsync();
+            await algolia.IndexPublicacionesAsync(publicaciones);
+        }
         TempData["Success"] = "Datos actualizados.";
         return RedirectToAction(nameof(Perfil));
     }
@@ -173,7 +184,7 @@ public class WorkerController(ApplicationDbContext db, UserManager<ApplicationUs
 }
 
 [Authorize]
-public class CompanyController(ApplicationDbContext db, UserManager<ApplicationUser> users, ImageUploadService uploads) : Controller
+public class CompanyController(ApplicationDbContext db, UserManager<ApplicationUser> users, ImageUploadService uploads, SkillLink.Services.AlgoliaService algolia) : Controller
 {
     [HttpGet("/empresa/registro/{userId}")]
     [AllowAnonymous]
@@ -266,10 +277,21 @@ public class CompanyController(ApplicationDbContext db, UserManager<ApplicationU
         var yo = (await users.GetUserAsync(User))!;
         var empresa = await db.Empresas.FirstOrDefaultAsync(e => e.UsuarioId == yo.Id);
         if (empresa is null) { TempData["Error"] = "Aún no tiene perfil de empresa."; return RedirectToAction(nameof(Perfil)); }
+        var ciudadAnterior = empresa.Ciudad;
         empresa.NombreContacto = vm.NombreContacto; empresa.Ciudad = vm.Ciudad;
         empresa.Telefono = vm.Telefono; empresa.Sector = vm.Sector;
         empresa.Descripcion = string.IsNullOrWhiteSpace(vm.Descripcion) ? null : vm.Descripcion.Trim();
         await db.SaveChangesAsync();
+        // La ciudad forma parte del registro indexado; reindexar si cambió.
+        if (!string.Equals(ciudadAnterior, empresa.Ciudad, StringComparison.Ordinal))
+        {
+            var publicaciones = await db.Publicaciones
+                .Include(p => p.Autor).ThenInclude(a => a!.Perfil)
+                .Include(p => p.Autor).ThenInclude(a => a!.Empresa)
+                .Where(p => p.AutorId == yo.Id && p.Activa)
+                .ToListAsync();
+            await algolia.IndexPublicacionesAsync(publicaciones);
+        }
         TempData["Success"] = "Datos actualizados.";
         return RedirectToAction(nameof(Perfil));
     }

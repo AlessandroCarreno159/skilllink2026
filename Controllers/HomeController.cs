@@ -52,10 +52,11 @@ public class HomeController(ApplicationDbContext db, SkillLink.Services.AlgoliaS
             .Include(p => p.Autor).ThenInclude(a => a!.Perfil)
             .Include(p => p.Autor).ThenInclude(a => a!.Empresa)
             .Where(p => p.Activa).AsQueryable();
+        List<int>? idsAlgolia = null;
         if (!string.IsNullOrWhiteSpace(q))
         {
             // Algolia primero (relevancia); si no está configurado o falla, LIKE en BD.
-            var idsAlgolia = await algolia.SearchPublicacionIdsAsync(q, 50);
+            idsAlgolia = await algolia.SearchPublicacionIdsAsync(q, 50);
             if (idsAlgolia is { Count: > 0 })
             {
                 query = query.Where(p => idsAlgolia.Contains(p.Id));
@@ -104,7 +105,20 @@ public class HomeController(ApplicationDbContext db, SkillLink.Services.AlgoliaS
             };
             query = query.Where(p => promedios.Select(x => x.Id).Contains(p.Id));
         }
-        var pubs = await query.OrderByDescending(p => p.FechaCreacion).Take(50).ToListAsync();
+        List<Models.Publicacion> pubs;
+        if (idsAlgolia is { Count: > 0 })
+        {
+            // Conservar el orden de relevancia de Algolia al materializar desde BD.
+            var orden = idsAlgolia.Select((id, indice) => (id, indice))
+                .ToDictionary(x => x.id, x => x.indice);
+            pubs = (await query.ToListAsync())
+                .OrderBy(p => orden.GetValueOrDefault(p.Id, int.MaxValue))
+                .ToList();
+        }
+        else
+        {
+            pubs = await query.OrderByDescending(p => p.FechaCreacion).Take(50).ToListAsync();
+        }
         var ids = pubs.Select(p => p.Id).ToList();
         ViewBag.CommentsCount = await db.ComentariosHilo
             .Where(c => ids.Contains(c.PublicacionId) && c.Activo)

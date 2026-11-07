@@ -9,10 +9,24 @@
   </div>
   <div class="col-lg-9">
     <h2 class="sk-section-title mb-3"><i class="bi bi-briefcase-fill sk-ic-brand"></i> Feed laboral</h2>
+    <div class="mb-4">
+      <partial name="_BuscadorAlgolia" />
+    </div>
     <div class="feed-list">
-    @if (!Model.Any())
+    @if (ViewBag.SearchError is string searchError)
     {
-      <div class="alert alert-info sk-toast sk-toast-info" role="status"><i class="bi bi-info-circle-fill"></i> No hay publicaciones con esos filtros.</div>
+      <div class="alert alert-warning sk-toast sk-toast-warn" role="alert"><i class="bi bi-exclamation-triangle-fill"></i> @searchError</div>
+    }
+    else if (!Model.Any())
+    {
+      if (!string.IsNullOrWhiteSpace(ViewBag.Q as string))
+      {
+        <div class="alert alert-info sk-toast sk-toast-info" role="status"><i class="bi bi-search"></i> No se encontraron publicaciones para “@ViewBag.Q”.</div>
+      }
+      else
+      {
+        <div class="alert alert-info sk-toast sk-toast-info" role="status"><i class="bi bi-info-circle-fill"></i> No hay publicaciones con esos filtros.</div>
+      }
     }
     @foreach (var p in Model)
     {
@@ -44,3 +58,8 @@
     }
   </div>
 </div>
+
+@section Scripts {
+  <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.24.0/dist/algoliasearch-lite.umd.js"></script>
+  <script src="~/js/busqueda-algolia.js" asp-append-version="true"></script>
+}

@@ -26,7 +26,12 @@ services:
         sync: false
       - key: Algolia__ApplicationId
         value: ZUL3Y9M7QD
+      # Clave privilegiada SOLO para el servidor (indexación). Se mantiene
+      # Algolia__ApiKey como alias; el servicio también acepta Algolia__IndexingApiKey.
       - key: Algolia__ApiKey
+        sync: false
+      # Search-Only API Key restringida (pública) usada por el buscador del frontend.
+      - key: Algolia__SearchApiKey
         sync: false
       - key: Algolia__IndexName
         value: skilllink_index

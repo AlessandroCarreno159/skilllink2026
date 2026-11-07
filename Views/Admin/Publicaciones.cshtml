@@ -22,7 +22,7 @@
   @total resultado(s) de @totalGeneral publicaciones · @totalRiesgo con riesgo · página @pagina de @totalPaginas
 </p>
 <table class="table table-striped align-middle">
-  <thead><tr><th>Riesgo</th><th>Clase</th><th></th><th>Tipo</th><th>Título</th><th>Autor</th><th>Fecha</th><th></th></tr></thead>
+  <thead><tr><th>Riesgo</th><th>Clase</th><th></th><th>Tipo</th><th>Título</th><th>Autor</th><th>Fecha</th><th>Estado</th><th></th></tr></thead>
   <tbody>
   @foreach (var v in Model)
   {
@@ -48,6 +48,23 @@
       </td>
       <td>@p.FechaCreacion.ToLocalTime()</td>
       <td>
+        @if (p.Activa)
+        {
+          <span class="badge bg-success">Activa</span>
+        }
+        else
+        {
+          <span class="badge bg-secondary">Oculta</span>
+        }
+      </td>
+      <td>
+        @if (!p.Activa)
+        {
+          <form asp-action="ReactivarPublicacion" asp-route-id="@p.Id" asp-route-returnUrl="@(Context.Request.Path.ToString() + Context.Request.QueryString.ToString())" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button class="btn btn-sm btn-outline-success"><i class="bi bi-eye"></i> Reactivar</button>
+          </form>
+        }
         <form asp-action="EliminarPublicacion" asp-route-id="@p.Id" asp-route-returnUrl="@(Context.Request.Path.ToString() + Context.Request.QueryString.ToString())" method="post" class="d-inline" onsubmit="return confirm('Eliminar DEFINITIVAMENTE esta publicación?');">
           @Html.AntiForgeryToken()
           <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Eliminar</button>
