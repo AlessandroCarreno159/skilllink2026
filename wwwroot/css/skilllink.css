@@ -308,6 +308,165 @@ input.btn-check:checked + .sk-star-btn { font-weight: 700; color: #3d2e00;
   .btn:hover, .sk-pub-card:hover, .sk-item:hover, .sk-navpill:hover, .sk-btn-continuar:hover { transform: none !important; }
 }
 
+/* ===== Buscador Algolia en tiempo real ===== */
+.sk-search { position: relative; z-index: 1090; width: 100%; max-width: 560px; margin-top: 1.25rem; overflow: visible !important; }
+.sk-search-form { margin: 0; overflow: visible !important; }
+.sk-search-box { overflow: visible !important; }
+.sk-sidebar:has(#sk-search) { overflow: visible !important; max-height: none; }
+.sk-search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.95rem;
+  background: linear-gradient(180deg, #fff, #f7f2ff);
+  border: 1.5px solid var(--sk-purple);
+  border-radius: 14px;
+  box-shadow: 0 2px 4px rgba(42,23,96,.08), 0 14px 26px -18px rgba(75,43,184,.55), inset 0 1px 0 #fff;
+  transition: border-color .18s, box-shadow .18s, transform .18s;
+}
+.sk-search-box:hover { border-color: var(--sk-purple-dark); }
+.sk-search-box:focus-within {
+  border-color: var(--sk-purple-dark);
+  box-shadow: 0 0 0 0.2rem rgba(123,83,245,.18), 0 16px 30px -18px rgba(75,43,184,.65), inset 0 1px 0 #fff;
+}
+.sk-search-box > i { flex: none; color: var(--sk-purple-dark); font-size: 1.1rem; }
+.sk-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #1a1a1a;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+.sk-search-input::placeholder { color: #8a86a3; }
+.sk-search-input::-webkit-search-cancel-button,
+.sk-search-input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+.sk-search-clear {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #8a86a3;
+  padding: 0;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.sk-search-clear:hover { color: var(--sk-purple-dark); }
+.sk-search-clear[hidden] { display: none !important; }
+
+.sk-search-results,
+#search-results-container {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  z-index: 9999;
+  max-height: min(60vh, 430px);
+  margin-top: 0.5rem;
+  overflow-y: auto;
+  background-color: #ffffff;
+  border: 1px solid rgba(124,77,255,.35);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.sk-search-results.is-open,
+#search-results-container.is-open { display: block; }
+.sk-search-results[hidden],
+#search-results-container[hidden] { display: none !important; }
+
+.sk-search-result {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  text-decoration: none;
+  color: #1a1a1a;
+  border-bottom: 1px solid #f0ebfb;
+  transition: background-color .15s;
+}
+.sk-search-result:hover,
+.sk-search-result:focus,
+.sk-search-result.is-active { background: var(--sk-lilac-soft); }
+.sk-search-thumb {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 9px;
+  object-fit: cover;
+  background: var(--sk-lilac-light);
+  box-shadow: 0 0 0 1px rgba(123,83,245,.25), 0 4px 8px -5px rgba(42,23,96,.5);
+}
+.sk-search-result-body { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.sk-search-result-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.sk-search-result-snippet {
+  font-size: 0.82rem;
+  color: #5f5b73;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.sk-search-result-meta { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.15rem; }
+.sk-search-chip {
+  background: var(--sk-lilac-light);
+  border: 1px solid rgba(123,83,245,.25);
+  border-radius: 999px;
+  padding: 0.05rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #3c2a6b;
+}
+.sk-search-all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--sk-purple-dark);
+  text-decoration: none;
+  background: linear-gradient(180deg, #fbf8ff, #f2eaff);
+}
+.sk-search-all:hover { color: var(--sk-purple-dark); text-decoration: underline; }
+
+.sk-search-loading,
+.sk-search-hint,
+.sk-search-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem;
+  color: #5f5b73;
+  font-size: 0.9rem;
+  text-align: center;
+}
+.sk-search-empty { flex-direction: column; gap: 0.25rem; }
+.sk-search-empty > i { font-size: 1.4rem; color: var(--sk-purple); }
+.sk-search-empty > strong { color: #1a1a1a; }
+.sk-search-empty > span { font-size: 0.82rem; }
+
+@media (max-width: 575.98px) {
+  .sk-search { max-width: 100%; }
+  .sk-search-box { padding: 0.55rem 0.8rem; }
+  .sk-search-input { font-size: 0.95rem; }
+  .sk-search-results { max-height: 65vh; }
+}
+
 /* --- Chat en tiempo real (Socket.io + Redis) --- */
 #sk-chat-widget { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 1080; }
 .sk-chat-toggle { position: relative; width: 56px; height: 56px; border-radius: 50%; border: 0; color: #fff;

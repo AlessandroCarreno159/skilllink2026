@@ -62,12 +62,17 @@ public sealed class ModeracionService(
         await db.SaveChangesAsync();
     }
 
-    public async Task AplicarResolucionAsync(Denuncia d, string estado)
+    /// <summary>
+    /// Aplica la resolución y devuelve la publicación afectada (si la hubo) para
+    /// que el llamador pueda sincronizar el índice después de guardar en BD.
+    /// </summary>
+    public async Task<Publicacion?> AplicarResolucionAsync(Denuncia d, string estado)
     {
         var ocultar = estado is "resuelta" or "basura" or "peligroso";
-        if (!ocultar) return;
+        if (!ocultar) return null;
 
         string? autorId = null;
+        Publicacion? publicacionAfectada = null;
         if (d.ObjetoTipo == "publicacion")
         {
             var pub = await db.Publicaciones.FindAsync(d.ObjetoId);
@@ -75,6 +80,7 @@ public sealed class ModeracionService(
             {
                 pub.Activa = false;
                 autorId = pub.AutorId;
+                publicacionAfectada = pub;
             }
         }
         else if (d.ObjetoTipo == "comentario")
@@ -96,5 +102,7 @@ public sealed class ModeracionService(
                 if (autor.FaltasModeracion >= 3) autor.Sospechoso = true;
             }
         }
+
+        return publicacionAfectada;
     }
 }

@@ -141,7 +141,7 @@ public class AdminController(
         var d = await db.Denuncias.FindAsync(id);
         if (d is null) { TempData["Error"] = "Denuncia no encontrada."; return RedirectToAction(nameof(Denuncias)); }
         d.Estado = estado;
-        await moderacion.AplicarResolucionAsync(d, estado);
+        var publicacionAfectada = await moderacion.AplicarResolucionAsync(d, estado);
         var admin = await users.GetUserAsync(User);
         db.HistorialModeracion.Add(new HistorialModeracion
         {
@@ -150,6 +150,8 @@ public class AdminController(
             Accion = "denuncia_" + accion, ObjetoTipo = d.ObjetoTipo, ObjetoId = d.ObjetoId
         });
         await db.SaveChangesAsync();
+        if (publicacionAfectada is not null)
+            await algolia.SyncPublicacionAsync(publicacionAfectada);
         TempData["Success"] = estado switch
         {
             "basura" => "Marcada como basura. El contenido quedó oculto.",
@@ -245,6 +247,13 @@ public class AdminController(
         db.HistorialModeracion.Add(new HistorialModeracion
         { UsuarioId = id, AdminId = admin?.Id, Accion = "editar_nombre" });
         await db.SaveChangesAsync();
+        // El nombre público forma parte del registro indexado: reindexar sus activas.
+        var publicaciones = await db.Publicaciones
+            .Include(p => p.Autor).ThenInclude(a => a!.Perfil)
+            .Include(p => p.Autor).ThenInclude(a => a!.Empresa)
+            .Where(p => p.AutorId == id && p.Activa)
+            .ToListAsync();
+        await algolia.IndexPublicacionesAsync(publicaciones);
         TempData["Success"] = "Nombre actualizado.";
         return RedirectToAction(nameof(Usuarios), new { estado = "todos" });
     }
@@ -267,6 +276,29 @@ public class AdminController(
         uploads.Borrar(p.Imagen);
         await algolia.DeletePublicacionAsync(id);
         TempData["Success"] = "Publicación eliminada definitivamente.";
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)) return Redirect(returnUrl);
+        return RedirectToAction(nameof(Publicaciones));
+    }
+
+    // Reactivar una publicación oculta la vuelve a indexar con sus datos completos.
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReactivarPublicacion(int id, string? returnUrl = null)
+    {
+        var p = await db.Publicaciones
+            .Include(x => x.Autor).ThenInclude(a => a!.Perfil)
+            .Include(x => x.Autor).ThenInclude(a => a!.Empresa)
+            .FirstOrDefaultAsync(x => x.Id == id);
+        if (p is null) { TempData["Error"] = "Publicación no encontrada."; return RedirectToAction(nameof(Publicaciones)); }
+        p.Activa = true;
+        var admin = await users.GetUserAsync(User);
+        db.HistorialModeracion.Add(new HistorialModeracion
+        {
+            UsuarioId = p.AutorId, AdminId = admin?.Id,
+            Accion = "reactivar_publicacion", ObjetoTipo = "publicacion", ObjetoId = id
+        });
+        await db.SaveChangesAsync();
+        await algolia.IndexPublicacionAsync(p);
+        TempData["Success"] = "Publicación reactivada e indexada.";
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)) return Redirect(returnUrl);
         return RedirectToAction(nameof(Publicaciones));
     }

@@ -121,6 +121,26 @@ if (args.Contains("--seed-150"))
     try
     {
         await PublicacionSeed.EjecutarAsync(seedDb, seedClasificador, args.Contains("--dry-run"));
+        if (!args.Contains("--dry-run"))
+        {
+            var seedAlgolia = seedScope.ServiceProvider.GetRequiredService<SkillLink.Services.AlgoliaService>();
+            if (seedAlgolia.IsConfigured)
+            {
+                // Reindexado completo: el seed oculta publicaciones existentes y
+                // crea otras con Activa=false; el índice debe reflejar solo activas.
+                var activas = await seedDb.Publicaciones
+                    .Include(p => p.Autor).ThenInclude(a => a!.Perfil)
+                    .Include(p => p.Autor).ThenInclude(a => a!.Empresa)
+                    .Where(p => p.Activa)
+                    .ToListAsync();
+                var total = await seedAlgolia.ReindexActivasAsync(activas);
+                Console.WriteLine($"Algolia: {total} publicaciones activas reindexadas.");
+            }
+            else
+            {
+                Console.WriteLine("Algolia sin configurar: el seed no se reindexó.");
+            }
+        }
     }
     catch (Exception ex)
     {
@@ -254,18 +274,16 @@ if (args.Contains("--reindex"))
     var algoliaSvc = scope.ServiceProvider.GetRequiredService<SkillLink.Services.AlgoliaService>();
     if (!algoliaSvc.IsConfigured)
     {
-        app.Logger.LogError("Reindex abortado: Algolia sin configurar (ApplicationId/ApiKey).");
+        app.Logger.LogError("Reindex abortado: Algolia sin configurar (ApplicationId/IndexingApiKey).");
         return;
     }
     var todas = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
-        .ToListAsync(dbr.Publicaciones.Where(p => p.Activa));
-    var ok = 0;
-    foreach (var pub in todas)
-    {
-        try { await algoliaSvc.IndexPublicacionAsync(pub); ok++; }
-        catch (Exception ex) { app.Logger.LogWarning(ex, "No se indexó {Id}.", pub.Id); }
-    }
-    app.Logger.LogInformation("Reindexadas {Ok}/{Total} publicaciones en Algolia.", ok, todas.Count);
+        .ToListAsync(dbr.Publicaciones
+            .Include(p => p.Autor).ThenInclude(a => a!.Perfil)
+            .Include(p => p.Autor).ThenInclude(a => a!.Empresa)
+            .Where(p => p.Activa));
+    var total = await algoliaSvc.ReindexActivasAsync(todas);
+    app.Logger.LogInformation("Reindexadas {Total} publicaciones activas en Algolia.", total);
     return;
 }
 // Datos demo (desarrollo): `dotnet run -- --seed-demo` crea 2 usuarios demo
@@ -524,14 +542,13 @@ if (args.Contains("--seed-demo"))
     }
 
     var activas = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
-        .ToListAsync(dbs.Publicaciones.Where(p => p.Activa));
-    var ok = 0;
-    foreach (var pub in activas)
-    {
-        try { await algoliaSeed.IndexPublicacionAsync(pub); ok++; }
-        catch (Exception ex) { app.Logger.LogWarning(ex, "No se indexó {Id}.", pub.Id); }
-    }
-    app.Logger.LogInformation("Seed-demo listo: {Nuevas} nuevas. Indexadas {Ok}/{Total} en Algolia.", nuevas, ok, activas.Count);
+        .ToListAsync(dbs.Publicaciones
+            .Include(p => p.Autor).ThenInclude(a => a!.Perfil)
+            .Include(p => p.Autor).ThenInclude(a => a!.Empresa)
+            .Where(p => p.Activa));
+    var totalIndexadas = await algoliaSeed.ReindexActivasAsync(activas);
+    app.Logger.LogInformation("Seed-demo listo: {Nuevas} nuevas. Indexadas {Total} publicaciones activas en Algolia.",
+        nuevas, totalIndexadas);
     return;
 }
 app.Run();

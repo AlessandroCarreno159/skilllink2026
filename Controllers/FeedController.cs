@@ -21,23 +21,17 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             .Include(p => p.Autor).ThenInclude(a => a!.Perfil)
             .Include(p => p.Autor).ThenInclude(a => a!.Empresa)
             .Where(p => p.Activa).AsQueryable();
+        List<int>? idsAlgolia = null;
         if (!string.IsNullOrWhiteSpace(q))
         {
-            // Algolia primero (relevancia); si no está configurado o falla, LIKE en BD.
-            var idsAlgolia = await algolia.SearchPublicacionIdsAsync(q, 50);
-            if (idsAlgolia is { Count: > 0 })
+            // La búsqueda del feed usa Algolia como único motor; sin fallback LIKE a BD.
+            idsAlgolia = await algolia.SearchPublicacionIdsAsync(q, 50);
+            if (idsAlgolia is null || idsAlgolia.Count == 0)
             {
-                query = query.Where(p => idsAlgolia.Contains(p.Id));
-                ViewBag.UsaAlgolia = true;
-            }
-            else if (idsAlgolia is null)
-            {
-                query = query.Where(p => (p.Titulo + " " + p.Contenido + " " + (p.HabilidadesReq ?? "")).Contains(q));
-            }
-            else
-            {
-                // Algolia respondió sin coincidencias: resultado vacío.
-                ViewBag.UsaAlgolia = true;
+                ViewBag.UsaAlgolia = idsAlgolia is not null;
+                ViewBag.SearchError = idsAlgolia is null
+                    ? "La búsqueda no está disponible en este momento. Intenta nuevamente."
+                    : null;
                 ViewBag.CommentsCount = new Dictionary<int, int>();
                 ViewBag.Ratings = new Dictionary<int, (double Promedio, int Total)>();
                 ViewBag.Seccion = seccion; ViewBag.Q = q; ViewBag.Ciudad = ciudad; ViewBag.Tipo = tipo;
@@ -47,6 +41,8 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
                 ViewBag.Pagina = 1; ViewBag.TotalPaginas = 1; ViewBag.Total = 0;
                 return View(new List<Publicacion>());
             }
+            query = query.Where(p => idsAlgolia.Contains(p.Id));
+            ViewBag.UsaAlgolia = true;
         }
         if (!string.IsNullOrWhiteSpace(ciudad))
             query = query.Where(p => p.Autor!.Perfil!.Ciudad == ciudad || p.Autor!.Empresa!.Ciudad == ciudad);
@@ -75,11 +71,30 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             query = query.Where(p => promedios.Select(x => x.Id).Contains(p.Id));
         }
         const int porPagina = 10;
-        var total = await query.CountAsync();
-        var totalPaginas = Math.Max(1, (int)Math.Ceiling(total / (double)porPagina));
-        pagina = Math.Clamp(pagina, 1, totalPaginas);
-        var pubs = await query.OrderByDescending(p => p.FechaCreacion)
-            .Skip((pagina - 1) * porPagina).Take(porPagina).ToListAsync();
+        int total;
+        int totalPaginas;
+        List<Publicacion> pubs;
+        if (idsAlgolia is { Count: > 0 })
+        {
+            // Materializar y paginar respetando el ranking de Algolia, no la fecha.
+            var orden = idsAlgolia.Select((id, indice) => (id, indice))
+                .ToDictionary(x => x.id, x => x.indice);
+            var coincidencias = (await query.ToListAsync())
+                .OrderBy(p => orden.GetValueOrDefault(p.Id, int.MaxValue))
+                .ToList();
+            total = coincidencias.Count;
+            totalPaginas = Math.Max(1, (int)Math.Ceiling(total / (double)porPagina));
+            pagina = Math.Clamp(pagina, 1, totalPaginas);
+            pubs = coincidencias.Skip((pagina - 1) * porPagina).Take(porPagina).ToList();
+        }
+        else
+        {
+            total = await query.CountAsync();
+            totalPaginas = Math.Max(1, (int)Math.Ceiling(total / (double)porPagina));
+            pagina = Math.Clamp(pagina, 1, totalPaginas);
+            pubs = await query.OrderByDescending(p => p.FechaCreacion)
+                .Skip((pagina - 1) * porPagina).Take(porPagina).ToListAsync();
+        }
         var ids = pubs.Select(p => p.Id).ToList();
         ViewBag.CommentsCount = await db.ComentariosHilo
             .Where(c => ids.Contains(c.PublicacionId) && c.Activo)
