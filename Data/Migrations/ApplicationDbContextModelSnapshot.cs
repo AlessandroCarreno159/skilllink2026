@@ -320,6 +320,46 @@ namespace SkillLink_dotnet.Data.Migrations
                     b.ToTable("BaneosDni");
                 });
 
+            modelBuilder.Entity("SkillLink_dotnet.Models.ChatbotFeedback", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("ConversationId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("MessageId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId", "MessageId")
+                        .IsUnique();
+
+                    b.ToTable("ChatbotFeedbacks");
+                });
+
             modelBuilder.Entity("SkillLink_dotnet.Models.ComentarioPublicacion", b =>
                 {
                     b.Property<int>("Id")

@@ -1,0 +1,52 @@
+[
+  {
+    "id": "como-funciona",
+    "preguntas": ["cómo funciona", "como funciona", "qué es skilllink", "que es skilllink", "para qué sirve", "para que sirve"],
+    "respuesta": "SkillLink conecta a personas y empresas con técnicos y trabajadores. Puedes buscar ofertas y perfiles, publicar servicios u ofertas, postular a oportunidades y conversar por el chat de la plataforma. Las cuentas pasan por un proceso de verificación y moderación."
+  },
+  {
+    "id": "buscar-tecnico",
+    "preguntas": ["buscar técnico", "buscar tecnico", "encontrar técnico", "encontrar tecnico", "necesito un técnico", "necesito un tecnico", "contratar técnico", "contratar tecnico"],
+    "respuesta": "Describe el problema, la especialidad y la ciudad. El asistente puede buscar técnicos por especialidad, habilidades y ubicación, y mostrarte tarjetas con su perfil, disponibilidad y calificaciones. El contacto se realiza por el chat interno de SkillLink."
+  },
+  {
+    "id": "publicar",
+    "preguntas": ["publicar", "publicación", "publicacion", "ofrecer servicios", "crear oferta", "subir oferta"],
+    "respuesta": "Para publicar, inicia sesión con una cuenta activa y entra a Feed laboral > Nueva publicación. Puedes indicar tipo, título, descripción, categoría, modalidad, precio y habilidades. Todo contenido pasa por moderación automática."
+  },
+  {
+    "id": "postular",
+    "preguntas": ["postul", "postular", "postulación", "postulacion", "solicitud", "solicitudes", "estado de mi solicitud"],
+    "respuesta": "Si eres trabajador, entra al detalle de una oferta y usa Postular. Puedes revisar el estado en Panel o en Solicitudes > Mis postulaciones. Si eres empresa, revisa las postulaciones recibidas en Solicitudes > Postulaciones."
+  },
+  {
+    "id": "contacto",
+    "preguntas": ["contactar", "contacto", "hablar con", "comunicarme", "chat", "mensaje"],
+    "respuesta": "El contacto se realiza por el chat interno de SkillLink. Abre el perfil o la publicación de la persona y usa Contactar o Mensajes. Por seguridad, el asistente no comparte teléfonos, correos ni datos personales de terceros."
+  },
+  {
+    "id": "cuenta",
+    "preguntas": ["cuenta", "verificación", "verificacion", "aprobar cuenta", "registro", "dni", "estado de cuenta"],
+    "respuesta": "Las cuentas se registran con DNI y pasan por verificación. El estado puede ser incompleto, pendiente, aprobado, rechazado, suspendido o baneado. Si tu cuenta está pendiente, un administrador debe revisarla antes de publicar o postular."
+  },
+  {
+    "id": "pagos",
+    "preguntas": ["pago", "pagos", "precio", "costo", "cuánto cuesta", "cuanto cuesta", "comisión", "comision"],
+    "respuesta": "Los precios y modalidades los define cada empresa o técnico en su publicación. SkillLink no procesa pagos dentro del chat del asistente. Revisa el precio y las condiciones en la publicación antes de contactar."
+  },
+  {
+    "id": "seguridad",
+    "preguntas": ["denunciar", "denuncia", "reportar", "seguridad", "estafa", "spam", "moderación", "moderacion"],
+    "respuesta": "Puedes reportar publicaciones o comentarios desde su detalle con el botón Denunciar. El equipo de moderación revisa los reportes y puede ocultar contenido o suspender cuentas. No compartas pagos por adelantado sin verificar a la persona."
+  },
+  {
+    "id": "modalidades",
+    "preguntas": ["modalidad", "tiempo completo", "medio tiempo", "por proyecto", "remoto", "presencial"],
+    "respuesta": "Las publicaciones pueden ser tiempo completo, medio tiempo o por proyecto. También puedes filtrar por categoría, ciudad, tipo y calificación desde el feed laboral."
+  },
+  {
+    "id": "soporte",
+    "preguntas": ["soporte", "ayuda", "problema", "error", "no funciona", "hablar con alguien"],
+    "respuesta": "Si el asistente no resuelve tu caso, usa el botón Hablar con soporte del chat o escribe al canal de soporte configurado por SkillLink. Para problemas de cuenta, indica tu DNI y el estado que ves, sin compartir tu contraseña."
+  }
+]

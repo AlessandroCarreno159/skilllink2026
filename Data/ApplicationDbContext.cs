@@ -23,6 +23,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<HistorialModeracion> HistorialModeracion => Set<HistorialModeracion>();
     public DbSet<BaneoDni> BaneosDni => Set<BaneoDni>();
     public DbSet<DocumentoAcreditacion> Documentos => Set<DocumentoAcreditacion>();
+    public DbSet<ChatbotFeedback> ChatbotFeedbacks => Set<ChatbotFeedback>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -93,6 +94,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         b.Entity<BaneoDni>(e =>
         {
             e.HasIndex(x => x.Dni).IsUnique();
+        });
+
+        b.Entity<ChatbotFeedback>(e =>
+        {
+            e.HasIndex(f => new { f.UsuarioId, f.MessageId }).IsUnique();
+            e.Property(f => f.ConversationId).HasMaxLength(64);
+            e.Property(f => f.MessageId).HasMaxLength(64);
+            e.Property(f => f.Comment).HasMaxLength(500);
         });
 
         foreach (var entity in b.Model.GetEntityTypes())

@@ -43,3 +43,15 @@ services:
         sync: false
       - key: Realtime__Secret
         sync: false
+      # Asistente virtual (Gemini). La API key se configura solo en Render.
+      - key: Chatbot__Enabled
+        value: true
+      - key: Chatbot__Model
+        value: gemini-2.5-flash
+      - key: Chatbot__FallbackModel
+        value: gemini-flash-lite-latest
+      - key: Chatbot__ApiKey
+        sync: false
+      # Opcional: URL de ayuda/soporte que el asistente puede mencionar.
+      - key: Chatbot__SupportUrl
+        sync: false

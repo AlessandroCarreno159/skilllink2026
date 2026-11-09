@@ -358,6 +358,10 @@
 
         window.addEventListener('beforeunload', function () { socket.disconnect(); });
         window.SkillLinkChat = { open: openChat };
+        window.SkillLinkRealtime = { socket: socket, me: data };
+        window.dispatchEvent(new CustomEvent('sk:realtime:ready', {
+          detail: { socket: socket, me: data }
+        }));
       })
       .catch(function (error) {
         console.warn('[realtime] Error obteniendo el token:', error);

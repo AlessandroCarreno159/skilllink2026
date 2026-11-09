@@ -1,0 +1,48 @@
+@* Asistente virtual de SkillLink (solo usuarios autenticados). *@
+<div id="sk-bot-widget">
+    <button id="sk-bot-toggle" type="button" class="sk-bot-toggle" aria-label="Abrir asistente SkillLink" aria-expanded="false">
+        <i class="bi bi-stars"></i>
+        <span class="sk-bot-toggle-label">Asistente</span>
+    </button>
+
+    <section id="sk-bot-panel" class="sk-bot-panel d-none" aria-label="Asistente virtual SkillLink">
+        <header class="sk-bot-head">
+            <div class="sk-bot-head-title">
+                <span class="sk-bot-avatar"><i class="bi bi-stars"></i></span>
+                <div>
+                    <strong>SkillLink Assist</strong>
+                    <small>Busca, consulta y resuelve dudas</small>
+                </div>
+            </div>
+            <div class="sk-bot-head-actions">
+                <button id="sk-bot-clear" type="button" class="btn btn-sm btn-link" title="Nueva conversación" aria-label="Nueva conversación">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+                <button id="sk-bot-close" type="button" class="btn btn-sm btn-link" title="Cerrar" aria-label="Cerrar asistente">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </header>
+
+        <div id="sk-bot-messages" class="sk-bot-messages" aria-live="polite"></div>
+        <div id="sk-bot-suggestions" class="sk-bot-suggestions"></div>
+
+        <div id="sk-bot-status" class="sk-bot-status d-none" role="status"></div>
+
+        <form id="sk-bot-form" class="sk-bot-form" autocomplete="off">
+            <label for="sk-bot-input" class="visually-hidden">Escribe tu consulta</label>
+            <textarea id="sk-bot-input" class="form-control" rows="1" maxlength="1000"
+                      placeholder="Ej. Busco un gasfitero en Arequipa"></textarea>
+            <button id="sk-bot-send" type="submit" class="btn sk-bot-send" aria-label="Enviar consulta">
+                <i class="bi bi-send-fill"></i>
+            </button>
+        </form>
+        <p class="sk-bot-foot">
+            No compartas datos privados. El asistente solo muestra información pública de SkillLink.
+        </p>
+    </section>
+</div>
+
+<form id="sk-bot-antiforgery" class="d-none" aria-hidden="true">
+    @Html.AntiForgeryToken()
+</form>
