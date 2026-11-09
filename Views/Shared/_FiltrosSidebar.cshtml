@@ -8,10 +8,13 @@
 }
 <aside class="sk-sidebar mb-3">
   <form method="get">
-    <div class="input-group mb-2">
-      <span class="input-group-text sk-auth-input"><i class="bi bi-search"></i></span>
-      <input name="q" value="@q" class="form-control sk-auth-input" placeholder="Buscar…" />
-    </div>
+    @if (ViewData["OcultarBuscadorFiltros"] as bool? != true)
+    {
+      <div class="input-group mb-2">
+        <span class="input-group-text sk-auth-input"><i class="bi bi-search"></i></span>
+        <input name="q" value="@q" class="form-control sk-auth-input" placeholder="Buscar…" />
+      </div>
+    }
     @if (!string.IsNullOrWhiteSpace(tipo)) { <input type="hidden" name="tipo" value="@tipo" /> }
     <a class="btn sk-btn-continuar btn-sm mb-2" asp-controller="Feed" asp-action="Create"><i class="bi bi-plus-circle-fill"></i> Nueva publicación</a>
     <h5><i class="bi bi-funnel-fill"></i> Filtros</h5>

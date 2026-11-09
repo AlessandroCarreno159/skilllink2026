@@ -2,14 +2,11 @@
 @model IEnumerable<SkillLink_dotnet.Models.Publicacion>
 @inject ImageUploadService Uploads
 @using SkillLink_dotnet.Services
-@{ ViewData["Title"] = "Feed laboral"; }
+@{ ViewData["Title"] = "Feed laboral"; ViewData["OcultarBuscadorFiltros"] = true; }
 <div class="row">
-  <div class="col-lg-3">
-    <partial name="_FiltrosSidebar" />
-  </div>
   <div class="col-lg-9">
     <h2 class="sk-section-title mb-3"><i class="bi bi-briefcase-fill sk-ic-brand"></i> Feed laboral</h2>
-    <div class="mb-4">
+    <div class="mb-4 sk-search-feed">
       <partial name="_BuscadorAlgolia" />
     </div>
     <div class="feed-list">
@@ -56,6 +53,9 @@
         </ul>
       </nav>
     }
+  </div>
+  <div class="col-lg-3">
+    <partial name="_FiltrosSidebar" />
   </div>
 </div>
 
