@@ -33,6 +33,11 @@
 .sk-btn-lila:hover { background: #fff; color: var(--sk-ink); }
 .sk-section-title { font-family: Georgia, 'Times New Roman', serif; }
 
+/* --- Tabs (nav-pills) con acento morado --- */
+.nav-pills .nav-link { color: var(--sk-ink); background: #fff; border: 1px solid rgba(123, 83, 245, .18); }
+.nav-pills .nav-link:hover { color: var(--sk-purple-dark); border-color: rgba(123, 83, 245, .4); }
+.nav-pills .nav-link.active { background: linear-gradient(180deg, #8d68ff, var(--sk-purple)); color: #fff; border-color: transparent; }
+
 /* --- Sidebar de filtros --- */
 .sk-sidebar { background: var(--sk-lilac); border-radius: 0.4rem; padding: 1.25rem 1.1rem; }
 .sk-sidebar h5 { font-family: Georgia, 'Times New Roman', serif; text-align: center; }

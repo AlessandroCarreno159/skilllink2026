@@ -26,6 +26,7 @@
                     <div class="sk-navpill">
                     <ul class="navbar-nav navbar-skilllink-left align-items-xl-center">
                         <li class="nav-item"><a class="nav-link" asp-controller="Feed" asp-action="Index">Feed laboral</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="PerfilesFeed" asp-action="Index">Feed de perfiles</a></li>
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             @if (User.IsInRole("empresa"))
