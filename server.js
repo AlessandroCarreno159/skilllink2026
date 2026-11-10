@@ -9,7 +9,13 @@ const { createAdapter } = require('@socket.io/redis-adapter');
 const Redis = require('ioredis');
 
 const PORT = Number(process.env.PORT || 3001);
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_URL = process.env.REDIS_URL;
+const REDIS_TLS = /^rediss:\/\//i.test(REDIS_URL || '');
+
+if (!REDIS_URL) {
+  console.error('[realtime] Falta REDIS_URL. Configúrala como variable de entorno (rediss://...).');
+  process.exit(1);
+}
 const REALTIME_SECRET = process.env.REALTIME_SECRET || '';
 const EVENTS_CHANNEL = process.env.REALTIME_CHANNEL || 'skilllink:events';
 const PRESENCE_TTL = Number(process.env.PRESENCE_TTL || 120);
@@ -41,7 +47,10 @@ const io = new Server(server, {
 
 const redisOptions = {
   maxRetriesPerRequest: null,
-  enableReadyCheck: true
+  enableReadyCheck: true,
+  // Upstash exige TLS; ioredis lo activa también con rediss://, pero lo
+  // declaramos explícitamente para dejar clara la conexión segura.
+  ...(REDIS_TLS ? { tls: {} } : {})
 };
 
 const pubClient = new Redis(REDIS_URL, redisOptions);
@@ -56,6 +65,16 @@ for (const [name, client] of [
   client.on('error', (err) => {
     console.error(`[realtime] Redis ${name} error:`, err.message);
   });
+}
+
+function maskRedisUrl(value) {
+  try {
+    const parsed = new URL(value);
+    if (parsed.password) parsed.password = '***';
+    return parsed.toString();
+  } catch {
+    return 'redis (URL inválida)';
+  }
 }
 
 const userRoom = (userId) => `user:${userId}`;
@@ -324,7 +343,7 @@ async function start() {
 
   server.listen(PORT, () => {
     console.log(`[realtime] Gateway escuchando en http://localhost:${PORT}`);
-    console.log(`[realtime] Redis: ${REDIS_URL}`);
+    console.log(`[realtime] Redis: ${maskRedisUrl(REDIS_URL)}`);
     console.log(`[realtime] CORS: ${CORS_ORIGINS.join(', ')}`);
   });
 }

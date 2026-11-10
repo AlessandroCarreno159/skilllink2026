@@ -80,17 +80,34 @@ public sealed class RealtimePublisher : IDisposable
             {
                 // Reintenta en 15s para no martillar Redis ni bloquear cada request.
                 _nextRetryUtc = DateTime.UtcNow.AddSeconds(15);
-                _logger.LogWarning(ex, "No se pudo conectar a Redis ({Url}); se reintentará luego.", url);
+                _logger.LogWarning(ex, "No se pudo conectar a Redis ({Url}); se reintentará luego.", MaskUrl(url));
                 return null;
             }
         }
     }
 
-    private string? ResolveRedisUrl()
-        => _config["REDIS_URL"]
-           ?? _config.GetConnectionString("Redis")
-           ?? _config["Redis:Url"]
-           ?? _config["Redis:ConnectionString"];
+    private static string? ResolveRedisUrl()
+    {
+        // Solo variables de entorno: nunca credenciales en appsettings ni en el repo.
+        var url = Environment.GetEnvironmentVariable("REDIS_URL")
+                  ?? Environment.GetEnvironmentVariable("ConnectionStrings__Redis");
+        return string.IsNullOrWhiteSpace(url) ? null : url.Trim();
+    }
+
+    private static string MaskUrl(string url)
+    {
+        try
+        {
+            var uri = new Uri(url);
+            if (string.IsNullOrEmpty(uri.UserInfo)) return url;
+            var user = uri.UserInfo.Split(':', 2)[0];
+            return new UriBuilder(uri) { UserName = user, Password = "***" }.Uri.ToString();
+        }
+        catch
+        {
+            return "redis";
+        }
+    }
 
     private static ConfigurationOptions BuildOptions(string url)
     {
@@ -101,10 +118,13 @@ public sealed class RealtimePublisher : IDisposable
         }
 
         var uri = new Uri(url);
+        var useSsl = uri.Scheme.Equals("rediss", StringComparison.OrdinalIgnoreCase);
         var options = new ConfigurationOptions
         {
             EndPoints = { { uri.Host, uri.IsDefaultPort ? 6379 : uri.Port } },
-            Ssl = uri.Scheme.Equals("rediss", StringComparison.OrdinalIgnoreCase)
+            Ssl = useSsl,
+            // Upstash usa TLS con SNI; fijar SslHost evita fallos de handshake.
+            SslHost = useSsl ? uri.Host : null
         };
 
         if (!string.IsNullOrWhiteSpace(uri.UserInfo))
