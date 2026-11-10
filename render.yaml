@@ -52,6 +52,6 @@ services:
         value: gemini-3.1-flash-lite
       - key: Chatbot__ApiKey
         sync: false
-      # Opcional: URL de ayuda/soporte que el asistente puede mencionar.
+      # Enlace de soporte humano que muestra el widget del asistente.
       - key: Chatbot__SupportUrl
-        sync: false
+        value: https://wa.me/+51936211313

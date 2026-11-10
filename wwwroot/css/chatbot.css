@@ -235,11 +235,31 @@ a.sk-bot-card:hover { border-color: var(--sk-purple, #7b53f5); box-shadow: 0 5px
 .sk-bot-send:hover { background: var(--sk-purple-dark, #6a3ff0); color: #fff; }
 .sk-bot-send:disabled { opacity: 0.55; }
 .sk-bot-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
   margin: 0;
   padding: 0.15rem 0.9rem 0.55rem;
   font-size: 0.66rem;
   color: #8b85a0;
   background: #fff;
+}
+
+.sk-bot-support {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #128c7e;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sk-bot-support:hover {
+  color: #075e54;
+  text-decoration: underline;
 }
 
 @media (max-width: 575.98px) {

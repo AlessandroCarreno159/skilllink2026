@@ -17,7 +17,7 @@ dotnet ef database update
 dotnet run
 ```
 
-Variables de entorno para producción: `Chatbot__ApiKey`, `Chatbot__Enabled`, `Chatbot__Model`, `Chatbot__FallbackModel`, `Chatbot__SupportUrl`. Si el modelo principal agota su cuota, el asistente reintenta con el modelo de respaldo. Redis y el gateway de Socket.io son opcionales para el funcionamiento HTTP; si no están disponibles, el chatbot usa memoria local y las respuestas llegan sin streaming en tiempo real.
+Variables de entorno para producción: `Chatbot__ApiKey`, `Chatbot__Enabled`, `Chatbot__Model`, `Chatbot__FallbackModel`, `Chatbot__SupportUrl` (enlace del botón de soporte; por defecto `https://wa.me/+51936211313`). Si el modelo principal agota su cuota, el asistente reintenta con el modelo de respaldo. Redis y el gateway de Socket.io son opcionales para el funcionamiento HTTP; si no están disponibles, el chatbot usa memoria local y las respuestas llegan sin streaming en tiempo real.
 
 ## Tiempo real local
 

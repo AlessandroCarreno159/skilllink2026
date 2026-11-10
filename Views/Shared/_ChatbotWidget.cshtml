@@ -1,4 +1,15 @@
 @* Asistente virtual de SkillLink (solo usuarios autenticados). *@
+@inject Microsoft.Extensions.Configuration.IConfiguration Cfg
+@{
+    var soporteRaw = Cfg["Chatbot:SupportUrl"];
+    string? soporteWhatsApp = null;
+    if (!string.IsNullOrWhiteSpace(soporteRaw)
+        && Uri.TryCreate(soporteRaw, UriKind.Absolute, out var soporteUri)
+        && (soporteUri.Scheme == Uri.UriSchemeHttps || soporteUri.Scheme == Uri.UriSchemeHttp))
+    {
+        soporteWhatsApp = soporteRaw;
+    }
+}
 <div id="sk-bot-widget">
     <button id="sk-bot-toggle" type="button" class="sk-bot-toggle" aria-label="Abrir asistente SkillLink" aria-expanded="false">
         <i class="bi bi-stars"></i>
@@ -43,9 +54,15 @@
                 <i class="bi bi-send-fill"></i>
             </button>
         </form>
-        <p class="sk-bot-foot">
-            No compartas datos privados. El asistente solo muestra información pública de SkillLink.
-        </p>
+        <div class="sk-bot-foot">
+            <span>No compartas datos privados. El asistente solo muestra información pública de SkillLink.</span>
+            @if (soporteWhatsApp is not null)
+            {
+                <a class="sk-bot-support" href="@soporteWhatsApp" target="_blank" rel="noopener noreferrer">
+                    <i class="bi bi-whatsapp"></i> Soporte por WhatsApp
+                </a>
+            }
+        </div>
     </section>
 </div>
 

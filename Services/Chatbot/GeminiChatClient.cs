@@ -165,7 +165,7 @@ public sealed class GeminiChatClient(
                 {
                     new JsonObject
                     {
-                        ["text"] = ChatbotPrompts.System(user.Role, user.DisplayName, cfg.SupportUrl)
+                        ["text"] = ChatbotPrompts.System(user.Role, user.DisplayName)
                     }
                 }
             },
