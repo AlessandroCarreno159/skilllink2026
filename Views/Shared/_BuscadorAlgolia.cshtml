@@ -1,4 +1,4 @@
-@* Buscador Algolia reutilizable (portada y feed laboral) *@
+@* Buscador Algolia reutilizable (portada, feed laboral y feed de perfiles) *@
 @inject Microsoft.Extensions.Configuration.IConfiguration Cfg
 @{
   // Nunca renderizar la clave privilegiada aunque se configure por error en SearchApiKey.
@@ -9,15 +9,40 @@
   {
     algoliaSearchKey = null;
   }
+
+  var modo = ViewData["SearchModo"] as string ?? "publicaciones";
+  var esPerfiles = string.Equals(modo, "perfiles", StringComparison.OrdinalIgnoreCase);
+  var seccion = ViewData["SearchSeccion"] as string ?? "personas";
+  var seccionNormalizada = string.Equals(seccion, "empresas", StringComparison.OrdinalIgnoreCase) ? "empresas" : "personas";
+  var profileTipo = seccionNormalizada == "empresas" ? "empresa" : "persona";
+  var conCiudad = ViewData["SearchConCiudad"] as bool? == true;
+  var ciudadSel = ViewData["SearchCiudad"] as string;
+
+  var indexPublicaciones = Cfg["Algolia:IndexName"] ?? "skilllink_index";
+  var indexName = esPerfiles
+    ? (Cfg["Algolia:PerfilesIndexName"] ?? $"{indexPublicaciones}_perfiles")
+    : indexPublicaciones;
+  var controlador = esPerfiles ? "PerfilesFeed" : "Feed";
+  var placeholder = esPerfiles
+    ? (profileTipo == "empresa" ? "Busca empresas, sectores o ciudades…" : "Busca personas, oficios o habilidades…")
+    : "Busca oficios, habilidades u oportunidades…";
 }
 <div id="sk-search"
-     class="sk-search"
+     class="sk-search @(esPerfiles ? "sk-search-perfiles" : "")"
      data-app-id="@Cfg["Algolia:ApplicationId"]"
      data-search-key="@algoliaSearchKey"
-     data-index-name="@(Cfg["Algolia:IndexName"] ?? "skilllink_index")"
+     data-index-name="@indexName"
+     data-search-mode="@modo"
+     data-search-seccion="@seccionNormalizada"
+     data-profile-tipo="@profileTipo"
      data-details-base="@Url.Action("Details", "Feed")"
-     data-feed-url="@Url.Action("Index", "Feed")">
-  <form class="sk-search-form" role="search" asp-controller="Feed" asp-action="Index" method="get" autocomplete="off">
+     data-feed-url="@Url.Action("Index", "Feed")"
+     data-perfiles-url="@Url.Action("Index", "PerfilesFeed")">
+  <form class="sk-search-form @(esPerfiles ? "sk-search-form--filtros" : "")" role="search" asp-controller="@controlador" asp-action="Index" method="get" autocomplete="off">
+    @if (esPerfiles)
+    {
+      <input type="hidden" name="seccion" value="@seccionNormalizada" />
+    }
     <div class="sk-search-box">
       <i class="bi bi-search" aria-hidden="true"></i>
       <input type="search"
@@ -25,8 +50,8 @@
              name="q"
              value="@(ViewBag.Q as string)"
              class="sk-search-input"
-             placeholder="Busca oficios, habilidades u oportunidades…"
-             aria-label="Buscar publicaciones"
+             placeholder="@placeholder"
+             aria-label="@(esPerfiles ? "Buscar perfiles" : "Buscar publicaciones")"
              aria-autocomplete="list"
              aria-controls="search-results-container"
              aria-expanded="false"
@@ -35,6 +60,20 @@
         <i class="bi bi-x-circle-fill"></i>
       </button>
     </div>
+    @if (conCiudad)
+    {
+      <div class="sk-search-city">
+        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+        <select name="ciudad" class="sk-search-select" aria-label="Filtrar por ciudad">
+          <option value="">Todas las ciudades</option>
+          @foreach (var d in Catalogos.Departamentos)
+          {
+            <option value="@d" selected="@(ciudadSel == d)">@d</option>
+          }
+        </select>
+      </div>
+      <button type="submit" class="sk-search-submit"><i class="bi bi-funnel-fill" aria-hidden="true"></i> Filtrar</button>
+    }
     <div id="search-results-container"
          class="sk-search-results"
          data-sk-search-results

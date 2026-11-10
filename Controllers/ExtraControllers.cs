@@ -86,6 +86,9 @@ public class AdminController(
             if (baneo is not null) db.BaneosDni.Remove(baneo);
         }
         await db.SaveChangesAsync();
+        var uSync = await db.Users.Include(x => x.Perfil).Include(x => x.Empresa)
+            .FirstAsync(x => x.Id == id);
+        await algolia.SyncPerfilUsuarioAsync(uSync);
         TempData["Success"] = $"Cuenta {estado}.";
         return RedirectToAction(nameof(Usuarios));
     }
@@ -254,6 +257,7 @@ public class AdminController(
             .Where(p => p.AutorId == id && p.Activa)
             .ToListAsync();
         await algolia.IndexPublicacionesAsync(publicaciones);
+        await algolia.SyncPerfilUsuarioAsync(u);
         TempData["Success"] = "Nombre actualizado.";
         return RedirectToAction(nameof(Usuarios), new { estado = "todos" });
     }

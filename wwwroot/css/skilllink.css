@@ -38,6 +38,53 @@
 .nav-pills .nav-link:hover { color: var(--sk-purple-dark); border-color: rgba(123, 83, 245, .4); }
 .nav-pills .nav-link.active { background: linear-gradient(180deg, #8d68ff, var(--sk-purple)); color: #fff; border-color: transparent; }
 
+/* --- Feed de perfiles: selector Personas / Empresas --- */
+.sk-perfiles-tabs { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.sk-perfiles-tabs .nav-item { flex: 1 1 240px; }
+.nav-pills .sk-perfiles-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border-radius: 16px;
+  border: 1.5px solid rgba(123, 83, 245, .28);
+  background: linear-gradient(180deg, #fff, #f7f2ff);
+  color: var(--sk-ink);
+  box-shadow: 0 10px 22px -18px rgba(75, 43, 184, .55), inset 0 1px 0 #fff;
+  transition: border-color .18s, box-shadow .18s, transform .18s;
+}
+.nav-pills .sk-perfiles-tab:hover {
+  color: var(--sk-ink);
+  border-color: var(--sk-purple);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px -16px rgba(75, 43, 184, .65), inset 0 1px 0 #fff;
+}
+.nav-pills .sk-perfiles-tab.active {
+  background: linear-gradient(135deg, #8d68ff, var(--sk-purple) 55%, #6a3ff0);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 16px 28px -16px rgba(124, 77, 255, .85);
+}
+.sk-perfiles-tab-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: var(--sk-lilac-light);
+  color: var(--sk-purple-dark);
+  font-size: 1.35rem;
+}
+.nav-pills .sk-perfiles-tab.active .sk-perfiles-tab-icon {
+  background: rgba(255, 255, 255, .22);
+  color: #fff;
+}
+.sk-perfiles-tab-text { display: flex; flex-direction: column; line-height: 1.15; text-align: left; }
+.sk-perfiles-tab-text strong { font-family: Georgia, 'Times New Roman', serif; font-size: 1.05rem; }
+.sk-perfiles-tab-text small { font-size: 0.78rem; opacity: 0.75; }
+
 /* --- Sidebar de filtros --- */
 .sk-sidebar { background: var(--sk-lilac); border-radius: 0.4rem; padding: 1.25rem 1.1rem; }
 .sk-sidebar h5 { font-family: Georgia, 'Times New Roman', serif; text-align: center; }
@@ -365,6 +412,53 @@ input.btn-check:checked + .sk-star-btn { font-weight: 700; color: #3d2e00;
 .sk-search-clear:hover { color: var(--sk-purple-dark); }
 .sk-search-clear[hidden] { display: none !important; }
 
+/* --- Buscador de perfiles: caja + ciudad + botón --- */
+.sk-search-perfiles { max-width: 100%; }
+.sk-search-form--filtros { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0.6rem; }
+.sk-search-form--filtros .sk-search-box { flex: 1 1 320px; }
+.sk-search-city {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  background: linear-gradient(180deg, #fff, #f7f2ff);
+  border: 1.5px solid var(--sk-purple);
+  border-radius: 14px;
+  box-shadow: 0 2px 4px rgba(42,23,96,.08), 0 14px 26px -18px rgba(75,43,184,.55), inset 0 1px 0 #fff;
+}
+.sk-search-city > i { flex: none; color: var(--sk-purple-dark); font-size: 1rem; }
+.sk-search-select {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #1a1a1a;
+  font-size: 0.95rem;
+  cursor: pointer;
+  min-width: 170px;
+  max-width: 220px;
+}
+.sk-search-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.1rem;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #8d68ff, var(--sk-purple));
+  color: #fff;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 12px 22px -14px rgba(124,77,255,.8), inset 0 1px 0 rgba(255,255,255,.35);
+  transition: background .18s, transform .18s, box-shadow .18s;
+}
+.sk-search-submit:hover {
+  background: linear-gradient(135deg, #7d55ff, var(--sk-purple-dark));
+  transform: translateY(-1px);
+  box-shadow: 0 16px 26px -14px rgba(124,77,255,.9);
+}
+.sk-search-avatar { border-radius: 50%; }
+
 .sk-search-results,
 #search-results-container {
   display: none;
@@ -471,6 +565,9 @@ input.btn-check:checked + .sk-star-btn { font-weight: 700; color: #3d2e00;
   .sk-search-box { padding: 0.55rem 0.8rem; }
   .sk-search-input { font-size: 0.95rem; }
   .sk-search-results { max-height: 65vh; }
+  .sk-search-form--filtros .sk-search-city,
+  .sk-search-form--filtros .sk-search-submit { flex: 1 1 100%; }
+  .sk-search-select { max-width: none; width: 100%; }
 }
 
 /* --- Chat en tiempo real (Socket.io + Redis) --- */

@@ -59,6 +59,8 @@ public class WorkerController(ApplicationDbContext db, UserManager<ApplicationUs
         });
         u.EstadoCuenta = EstadosCuenta.Pendiente;
         await db.SaveChangesAsync();
+        var perfilCreado = await db.Perfiles.FirstAsync(p => p.UsuarioId == u.Id);
+        await algolia.IndexPerfilAsync(perfilCreado, u.EstadoCuenta);
         TempData["Success"] = "Perfil enviado. Pendiente de aprobación.";
         return RedirectToAction("Login", "Account");
     }
@@ -110,6 +112,7 @@ public class WorkerController(ApplicationDbContext db, UserManager<ApplicationUs
         perfil.Foto = await uploads.GuardarAsync(foto!, "fotos");
         await db.SaveChangesAsync();
         uploads.Borrar(anterior);
+        await algolia.IndexPerfilAsync(perfil, yo.EstadoCuenta);
         TempData["Success"] = "Foto de perfil actualizada.";
         return RedirectToAction(nameof(Perfil));
     }
@@ -122,6 +125,7 @@ public class WorkerController(ApplicationDbContext db, UserManager<ApplicationUs
         if (perfil is null) { TempData["Error"] = "Aún no tiene perfil."; return RedirectToAction(nameof(Perfil)); }
         perfil.Descripcion = string.IsNullOrWhiteSpace(descripcion) ? null : descripcion.Trim();
         await db.SaveChangesAsync();
+        await algolia.IndexPerfilAsync(perfil, yo.EstadoCuenta);
         TempData["Success"] = "Descripción actualizada.";
         return RedirectToAction(nameof(Perfil));
     }
@@ -154,6 +158,7 @@ public class WorkerController(ApplicationDbContext db, UserManager<ApplicationUs
         perfil.Disponibilidad = vm.Disponibilidad;
         perfil.Descripcion = string.IsNullOrWhiteSpace(vm.Descripcion) ? null : vm.Descripcion.Trim();
         await db.SaveChangesAsync();
+        await algolia.IndexPerfilAsync(perfil, yo.EstadoCuenta);
         // La ciudad forma parte del registro indexado; reindexar si cambió.
         if (!string.Equals(ciudadAnterior, perfil.Ciudad, StringComparison.Ordinal))
         {
@@ -213,6 +218,8 @@ public class CompanyController(ApplicationDbContext db, UserManager<ApplicationU
         });
         u.EstadoCuenta = EstadosCuenta.Pendiente;
         await db.SaveChangesAsync();
+        var empresaCreada = await db.Empresas.FirstAsync(e => e.UsuarioId == u.Id);
+        await algolia.IndexEmpresaAsync(empresaCreada, u.EstadoCuenta);
         TempData["Success"] = "Empresa registrada. Pendiente de aprobación.";
         return RedirectToAction("Login", "Account");
     }
@@ -239,6 +246,7 @@ public class CompanyController(ApplicationDbContext db, UserManager<ApplicationU
         empresa.Logo = await uploads.GuardarAsync(logo!, "logos");
         await db.SaveChangesAsync();
         uploads.Borrar(anterior);
+        await algolia.IndexEmpresaAsync(empresa, yo.EstadoCuenta);
         TempData["Success"] = "Logo actualizado.";
         return RedirectToAction(nameof(Perfil));
     }
@@ -251,6 +259,7 @@ public class CompanyController(ApplicationDbContext db, UserManager<ApplicationU
         if (empresa is null) { TempData["Error"] = "Aún no tiene perfil de empresa."; return RedirectToAction(nameof(Perfil)); }
         empresa.Descripcion = string.IsNullOrWhiteSpace(descripcion) ? null : descripcion.Trim();
         await db.SaveChangesAsync();
+        await algolia.IndexEmpresaAsync(empresa, yo.EstadoCuenta);
         TempData["Success"] = "Descripción actualizada.";
         return RedirectToAction(nameof(Perfil));
     }
@@ -282,6 +291,7 @@ public class CompanyController(ApplicationDbContext db, UserManager<ApplicationU
         empresa.Telefono = vm.Telefono; empresa.Sector = vm.Sector;
         empresa.Descripcion = string.IsNullOrWhiteSpace(vm.Descripcion) ? null : vm.Descripcion.Trim();
         await db.SaveChangesAsync();
+        await algolia.IndexEmpresaAsync(empresa, yo.EstadoCuenta);
         // La ciudad forma parte del registro indexado; reindexar si cambió.
         if (!string.Equals(ciudadAnterior, empresa.Ciudad, StringComparison.Ordinal))
         {

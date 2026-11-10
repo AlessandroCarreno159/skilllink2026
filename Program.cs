@@ -157,6 +157,12 @@ if (args.Contains("--seed-150"))
                     .ToListAsync();
                 var total = await seedAlgolia.ReindexActivasAsync(activas);
                 Console.WriteLine($"Algolia: {total} publicaciones activas reindexadas.");
+                var usuariosSeed = await seedDb.Users
+                    .Include(u => u.Perfil).Include(u => u.Empresa)
+                    .Where(u => u.Rol != Roles.Admin)
+                    .ToListAsync();
+                var totalPerfiles = await seedAlgolia.ReindexPerfilesAsync(usuariosSeed);
+                Console.WriteLine($"Algolia: {totalPerfiles} perfiles reindexados.");
             }
             else
             {
@@ -306,6 +312,12 @@ if (args.Contains("--reindex"))
             .Where(p => p.Activa));
     var total = await algoliaSvc.ReindexActivasAsync(todas);
     app.Logger.LogInformation("Reindexadas {Total} publicaciones activas en Algolia.", total);
+    var usuarios = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+        .ToListAsync(dbr.Users
+            .Include(u => u.Perfil).Include(u => u.Empresa)
+            .Where(u => u.Rol != Roles.Admin));
+    var totalPerfiles = await algoliaSvc.ReindexPerfilesAsync(usuarios);
+    app.Logger.LogInformation("Reindexados {Total} perfiles aprobados en Algolia.", totalPerfiles);
     return;
 }
 // Datos demo (desarrollo): `dotnet run -- --seed-demo` crea 2 usuarios demo
@@ -571,6 +583,12 @@ if (args.Contains("--seed-demo"))
     var totalIndexadas = await algoliaSeed.ReindexActivasAsync(activas);
     app.Logger.LogInformation("Seed-demo listo: {Nuevas} nuevas. Indexadas {Total} publicaciones activas en Algolia.",
         nuevas, totalIndexadas);
+    var usuariosDemo = await dbs.Users
+        .Include(u => u.Perfil).Include(u => u.Empresa)
+        .Where(u => u.Rol != Roles.Admin)
+        .ToListAsync();
+    var totalPerfilesDemo = await algoliaSeed.ReindexPerfilesAsync(usuariosDemo);
+    app.Logger.LogInformation("Seed-demo: {Total} perfiles indexados en Algolia.", totalPerfilesDemo);
     return;
 }
 app.Run();

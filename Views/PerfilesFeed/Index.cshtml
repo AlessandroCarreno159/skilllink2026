@@ -5,6 +5,12 @@
   ViewData["Title"] = "Feed de perfiles";
   var esEmpresas = Model.Seccion == "empresas";
   var hayFiltros = !string.IsNullOrWhiteSpace(Model.Q) || !string.IsNullOrWhiteSpace(Model.Ciudad);
+
+  ViewBag.Q = Model.Q;
+  ViewData["SearchModo"] = "perfiles";
+  ViewData["SearchSeccion"] = Model.Seccion;
+  ViewData["SearchConCiudad"] = true;
+  ViewData["SearchCiudad"] = Model.Ciudad;
 }
 @functions {
   static string? Resumen(string? texto, int max)
@@ -16,39 +22,35 @@
 }
 <h2 class="sk-section-title mb-3"><i class="bi bi-people-fill sk-ic-brand"></i> Feed de perfiles</h2>
 
-<ul class="nav nav-pills gap-2 mb-3">
+<ul class="nav nav-pills sk-perfiles-tabs mb-3">
   <li class="nav-item">
-    <a class="nav-link @(!esEmpresas ? "active" : "")" asp-action="Index" asp-route-seccion="personas" asp-route-q="@Model.Q" asp-route-ciudad="@Model.Ciudad">
-      <i class="bi bi-person-fill"></i> Personas
+    <a class="nav-link sk-perfiles-tab @(!esEmpresas ? "active" : "")" asp-action="Index" asp-route-seccion="personas" asp-route-q="@Model.Q" asp-route-ciudad="@Model.Ciudad">
+      <span class="sk-perfiles-tab-icon"><i class="bi bi-person-badge-fill"></i></span>
+      <span class="sk-perfiles-tab-text">
+        <strong>Personas</strong>
+        <small>@Model.TotalPersonas @(Model.TotalPersonas == 1 ? "perfil" : "perfiles")</small>
+      </span>
     </a>
   </li>
   <li class="nav-item">
-    <a class="nav-link @(esEmpresas ? "active" : "")" asp-action="Index" asp-route-seccion="empresas" asp-route-q="@Model.Q" asp-route-ciudad="@Model.Ciudad">
-      <i class="bi bi-building-fill"></i> Empresas
+    <a class="nav-link sk-perfiles-tab @(esEmpresas ? "active" : "")" asp-action="Index" asp-route-seccion="empresas" asp-route-q="@Model.Q" asp-route-ciudad="@Model.Ciudad">
+      <span class="sk-perfiles-tab-icon"><i class="bi bi-building-fill"></i></span>
+      <span class="sk-perfiles-tab-text">
+        <strong>Empresas</strong>
+        <small>@Model.TotalEmpresas @(Model.TotalEmpresas == 1 ? "empresa" : "empresas")</small>
+      </span>
     </a>
   </li>
 </ul>
 
-<form method="get" class="row g-2 align-items-end mb-4 sk-search-feed">
-  <input type="hidden" name="seccion" value="@Model.Seccion" />
-  <div class="col-md-6">
-    <label class="form-label small text-muted mb-1" for="pf-q">Buscar</label>
-    <input id="pf-q" name="q" value="@Model.Q" class="form-control sk-auth-input" placeholder="@(esEmpresas ? "Razón social, sector…" : "Nombre, especialidad, habilidad…")" />
-  </div>
-  <div class="col-md-4">
-    <label class="form-label small text-muted mb-1" for="pf-ciudad">Ciudad</label>
-    <select id="pf-ciudad" name="ciudad" class="form-select sk-auth-input">
-      <option value="">Todas</option>
-      @foreach (var d in Catalogos.Departamentos)
-      {
-        <option value="@d" selected="@(Model.Ciudad == d)">@d</option>
-      }
-    </select>
-  </div>
-  <div class="col-md-2">
-    <button class="btn sk-btn-continuar w-100" type="submit"><i class="bi bi-search"></i> Filtrar</button>
-  </div>
-</form>
+<div class="mb-4 sk-search-feed">
+  <partial name="_BuscadorAlgolia" />
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.SearchError))
+{
+  <div class="alert alert-warning sk-toast sk-toast-warn" role="alert"><i class="bi bi-exclamation-triangle-fill"></i> @Model.SearchError</div>
+}
 
 <p class="text-muted small mb-3">
   @(esEmpresas ? "Empresas" : "Personas") encontradas: <strong>@Model.Total</strong>
@@ -104,9 +106,11 @@
     <div class="col-12">
       <div class="alert alert-info sk-toast sk-toast-info" role="status">
         <i class="bi bi-info-circle-fill"></i>
-        @(hayFiltros
-          ? "No se encontraron perfiles con esos filtros."
-          : esEmpresas ? "Aún no hay empresas registradas." : "Aún no hay personas registradas.")
+        @(Model.SearchError is not null
+          ? "La búsqueda no está disponible en este momento."
+          : hayFiltros
+            ? "No se encontraron perfiles con esos filtros."
+            : esEmpresas ? "Aún no hay empresas registradas." : "Aún no hay personas registradas.")
       </div>
     </div>
   }
@@ -130,4 +134,9 @@
       </li>
     </ul>
   </nav>
+}
+
+@section Scripts {
+  <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.24.0/dist/algoliasearch-lite.umd.js"></script>
+  <script src="~/js/busqueda-algolia.js" asp-append-version="true"></script>
 }
