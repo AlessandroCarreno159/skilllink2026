@@ -96,7 +96,7 @@ public sealed class ChatCardFactory(ImageUploadService uploads)
                 ? titulo
                 : $"Publicación #{p.Id}",
             ["subtitle"] = subtitulo,
-            ["city"] = Catalogos.Ciudad(p),
+            ["city"] = ChatPrivacy.Sanitize(Catalogos.Ciudad(p)),
             ["price"] = ChatPrivacy.Sanitize(Catalogos.Precio(p)),
             ["rating"] = rating,
             ["ratingTotal"] = ratingTotal,
@@ -104,7 +104,7 @@ public sealed class ChatCardFactory(ImageUploadService uploads)
             ["url"] = $"/Feed/Details/{p.Id}",
             ["reason"] = ChatPrivacy.Sanitize(reason),
             ["peerId"] = p.AutorId,
-            ["peerName"] = NombrePublicoSeguro(p.Autor),
+            ["peerName"] = ChatPrivacy.Sanitize(NombrePublicoSeguro(p.Autor)),
             ["skills"] = ChatPrivacy.Sanitize(p.HabilidadesReq),
             ["availability"] = null,
         };

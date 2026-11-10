@@ -62,6 +62,16 @@ public sealed class RedisConnectionProvider : IDisposable
                 options.SyncTimeout = 1500;
 
                 var multiplexer = ConnectionMultiplexer.Connect(options);
+                try
+                {
+                    multiplexer.GetDatabase().Ping();
+                }
+                catch
+                {
+                    try { multiplexer.Dispose(); } catch { /* nada */ }
+                    throw;
+                }
+
                 if (!multiplexer.IsConnected)
                 {
                     _nextRetryUtc = DateTime.UtcNow.AddSeconds(20);

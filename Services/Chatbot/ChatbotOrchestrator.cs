@@ -106,7 +106,8 @@ public sealed class ChatbotOrchestrator(
             respuestaSegura = "No pude generar una respuesta en este momento. Intenta reformular tu consulta.";
         reply = reply with { Reply = respuestaSegura };
 
-        var sugerencias = BuildSuggestions(user.Role, reply.Cards);
+        var tarjetasPublicas = TarjetasPublicas(reply.Cards);
+        var sugerencias = BuildSuggestions(user.Role, tarjetasPublicas);
         session.Messages.Add(new ChatSessionMessage("user", texto, DateTimeOffset.UtcNow));
         session.Messages.Add(new ChatSessionMessage("model", reply.Reply, DateTimeOffset.UtcNow));
         await store.SaveAsync(user.UserId, session, ct);
@@ -116,11 +117,24 @@ public sealed class ChatbotOrchestrator(
             conversationId = session.ConversationId,
             messageId,
             reply = reply.Reply,
-            cards = reply.Cards,
+            cards = tarjetasPublicas,
             suggestions = sugerencias,
         });
 
-        return new ChatResult(session.ConversationId, messageId, reply.Reply, reply.Cards, sugerencias);
+        return new ChatResult(session.ConversationId, messageId, reply.Reply, tarjetasPublicas, sugerencias);
+    }
+
+    private static IReadOnlyList<JsonNode> TarjetasPublicas(IReadOnlyList<JsonNode> cards)
+    {
+        var publicas = new List<JsonNode>(cards.Count);
+        foreach (var card in cards)
+        {
+            if (card?.DeepClone() is not JsonObject copia) continue;
+            copia.Remove("id");
+            copia.Remove("peerId");
+            publicas.Add(copia);
+        }
+        return publicas;
     }
 
     private static IReadOnlyList<string> BuildSuggestions(string role, IReadOnlyList<JsonNode> cards)

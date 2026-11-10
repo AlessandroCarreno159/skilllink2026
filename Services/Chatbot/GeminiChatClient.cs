@@ -221,20 +221,24 @@ public sealed class GeminiChatClient(
         {
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning("Gemini respondió {Status}: {Body}", (int)response.StatusCode, Truncar(raw, 500));
+                var status = (int)response.StatusCode;
+                logger.LogWarning("Gemini respondió {Status}: {Body}", status, Truncar(raw, 500));
 
-                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                var puedeFallback = !_usarFallback
+                    && !string.IsNullOrWhiteSpace(cfg.FallbackModel)
+                    && !string.Equals(cfg.FallbackModel, cfg.Model, StringComparison.OrdinalIgnoreCase);
+                var errorTransitorio = status is 429 or 500 or 502 or 503 or 504;
+
+                if (errorTransitorio && puedeFallback)
                 {
-                    if (!_usarFallback
-                        && !string.IsNullOrWhiteSpace(cfg.FallbackModel)
-                        && !string.Equals(cfg.FallbackModel, cfg.Model, StringComparison.OrdinalIgnoreCase))
-                    {
-                        _usarFallback = true;
-                        logger.LogWarning("Gemini sin cuota para {Model}; se usará {Fallback}.",
-                            cfg.Model, cfg.FallbackModel);
-                        return await GenerateAsync(cfg, user, contents, declarations, ct);
-                    }
+                    _usarFallback = true;
+                    logger.LogWarning("Gemini no disponible con {Model} ({Status}); se usará {Fallback}.",
+                        cfg.Model, status, cfg.FallbackModel);
+                    return await GenerateAsync(cfg, user, contents, declarations, ct);
+                }
 
+                if (status == 429)
+                {
                     var retry = 60;
                     if (response.Headers.RetryAfter?.Delta is { } delta && delta > TimeSpan.Zero)
                         retry = Math.Max(1, (int)Math.Ceiling(delta.TotalSeconds));
