@@ -6,8 +6,8 @@ public sealed class ChatbotOptions
 
     public bool Enabled { get; set; } = true;
     public string ApiKey { get; set; } = string.Empty;
-    public string Model { get; set; } = "gemini-2.5-flash";
-    public string FallbackModel { get; set; } = "gemini-flash-lite-latest";
+    public string Model { get; set; } = "gemini-flash-lite-latest";
+    public string FallbackModel { get; set; } = "gemini-3.1-flash-lite";
     public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com/v1beta";
     public int MaxInputChars { get; set; } = 1000;
     public int MaxHistoryMessages { get; set; } = 20;

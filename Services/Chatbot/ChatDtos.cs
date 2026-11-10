@@ -10,7 +10,10 @@ public sealed record ChatFeedbackRequest(string? ConversationId, string? Message
 
 public sealed record ChatSessionMessage(string Role, string Text, DateTimeOffset At);
 
-public sealed record ChatSession(string ConversationId, List<ChatSessionMessage> Messages);
+public sealed record ChatSession(
+    string ConversationId,
+    List<ChatSessionMessage> Messages,
+    DateTimeOffset UpdatedAt = default);
 
 public sealed record ChatResult(
     string ConversationId,

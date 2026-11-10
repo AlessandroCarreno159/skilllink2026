@@ -47,9 +47,9 @@ services:
       - key: Chatbot__Enabled
         value: true
       - key: Chatbot__Model
-        value: gemini-2.5-flash
-      - key: Chatbot__FallbackModel
         value: gemini-flash-lite-latest
+      - key: Chatbot__FallbackModel
+        value: gemini-3.1-flash-lite
       - key: Chatbot__ApiKey
         sync: false
       # Opcional: URL de ayuda/soporte que el asistente puede mencionar.

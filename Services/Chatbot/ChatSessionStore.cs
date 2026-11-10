@@ -16,6 +16,7 @@ public sealed class ChatSessionStore(
     public async Task<ChatSession> GetAsync(string userId, CancellationToken ct = default)
     {
         var key = Key(userId);
+        ChatSession? remota = null;
         var db = redis.TryGetDatabase();
         if (db is not null)
         {
@@ -23,10 +24,7 @@ public sealed class ChatSessionStore(
             {
                 var raw = await db.StringGetAsync(key);
                 if (!raw.IsNullOrEmpty)
-                {
-                    var sesion = JsonSerializer.Deserialize<ChatSession>(raw.ToString(), JsonOptions);
-                    if (sesion is not null) return sesion;
-                }
+                    remota = JsonSerializer.Deserialize<ChatSession>(raw.ToString(), JsonOptions);
             }
             catch (Exception ex)
             {
@@ -35,7 +33,17 @@ public sealed class ChatSessionStore(
         }
 
         if (memoria.TryGetValue<ChatSession>(key, out var local) && local is not null)
-            return local;
+        {
+            if (remota is null || local.UpdatedAt > remota.UpdatedAt)
+            {
+                if (remota is not null)
+                    await SaveAsync(userId, local, ct);
+                return Clonar(local);
+            }
+        }
+
+        if (remota is not null)
+            return remota;
 
         var nueva = new ChatSession(Guid.NewGuid().ToString("N"), new List<ChatSessionMessage>());
         await SaveAsync(userId, nueva, ct);
@@ -50,6 +58,7 @@ public sealed class ChatSessionStore(
 
         var ttl = TimeSpan.FromMinutes(Math.Max(5, options.Value.SessionTtlMinutes));
         var key = Key(userId);
+        sesion = sesion with { UpdatedAt = DateTimeOffset.UtcNow };
         var json = JsonSerializer.Serialize(sesion, JsonOptions);
 
         var db = redis.TryGetDatabase();
@@ -65,7 +74,7 @@ public sealed class ChatSessionStore(
             }
         }
 
-        memoria.Set(key, sesion, new MemoryCacheEntryOptions
+        memoria.Set(key, Clonar(sesion), new MemoryCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = ttl
         });
@@ -86,6 +95,9 @@ public sealed class ChatSessionStore(
             logger.LogWarning(ex, "No se pudo borrar la sesión del chatbot en Redis.");
         }
     }
+
+    private static ChatSession Clonar(ChatSession sesion)
+        => new(sesion.ConversationId, sesion.Messages.Select(m => new ChatSessionMessage(m.Role, m.Text, m.At)).ToList());
 
     private static string Key(string userId) => $"skilllink:chatbot:session:{userId}";
 }

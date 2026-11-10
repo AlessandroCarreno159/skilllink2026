@@ -303,7 +303,7 @@ public sealed class ObtenerPublicacionTool(
             ["modalidad"] = Catalogos.Modalidad(p.Modalidad),
             ["precio"] = ChatPrivacy.Sanitize(Catalogos.Precio(p)),
             ["ciudad"] = ChatPrivacy.Sanitize(Catalogos.Ciudad(p)),
-            ["autor"] = ChatCardFactory.NombrePublicoSeguro(p.Autor),
+            ["autor"] = ChatPrivacy.Sanitize(ChatCardFactory.NombrePublicoSeguro(p.Autor)),
         };
         return ChatToolJson.Ok("Detalle de la publicación.", new JsonArray { card }, new JsonArray { item });
     }
@@ -397,19 +397,30 @@ public sealed class EstadoSolicitudesTool(
         if (context.Role is not (Roles.Trabajador or Roles.Empresa))
             return ChatToolJson.Error("El estado de postulaciones solo está disponible para cuentas de trabajador o empresa.");
 
-        var q = db.Solicitudes.AsNoTracking()
+        var baseQuery = db.Solicitudes.AsNoTracking().Where(s => s.Activa);
+        if (context.Role == Roles.Trabajador)
+            baseQuery = baseQuery.Where(s => s.TrabajadorId == context.UserId);
+        else
+            baseQuery = baseQuery.Where(s => s.Publicacion!.AutorId == context.UserId);
+
+        var resumenEstados = await baseQuery
+            .GroupBy(s => s.Estado)
+            .Select(g => new { Estado = g.Key, Total = g.Count() })
+            .ToListAsync(ct);
+        var total = resumenEstados.Sum(x => x.Total);
+        var pendientes = resumenEstados.FirstOrDefault(x => x.Estado == EstadosSolicitud.Pendiente)?.Total ?? 0;
+        var aceptadas = resumenEstados.FirstOrDefault(x => x.Estado == EstadosSolicitud.Aceptada)?.Total ?? 0;
+        var rechazadas = resumenEstados.FirstOrDefault(x => x.Estado == EstadosSolicitud.Rechazada)?.Total ?? 0;
+
+        var lista = await baseQuery
             .Include(s => s.Publicacion).ThenInclude(p => p!.Autor).ThenInclude(a => a!.Empresa)
             .Include(s => s.Trabajador).ThenInclude(t => t!.Perfil)
-            .Where(s => s.Activa);
+            .OrderByDescending(s => s.FechaPostulacion)
+            .Take(10)
+            .ToListAsync(ct);
 
-        if (context.Role == Roles.Trabajador)
-            q = q.Where(s => s.TrabajadorId == context.UserId);
-        else
-            q = q.Where(s => s.Publicacion!.AutorId == context.UserId);
-
-        var lista = await q.OrderByDescending(s => s.FechaPostulacion).Take(20).ToListAsync(ct);
         var items = new JsonArray();
-        foreach (var s in lista.Take(10))
+        foreach (var s in lista)
         {
             var contraparte = context.Role == Roles.Trabajador
                 ? s.Publicacion?.Autor?.Empresa?.RazonSocial ?? "Empresa"
@@ -423,14 +434,11 @@ public sealed class EstadoSolicitudesTool(
             });
         }
 
-        var pendientes = lista.Count(s => s.Estado == EstadosSolicitud.Pendiente);
-        var aceptadas = lista.Count(s => s.Estado == EstadosSolicitud.Aceptada);
-        var rechazadas = lista.Count(s => s.Estado == EstadosSolicitud.Rechazada);
-        logger.LogInformation("Chatbot consultó {Total} solicitudes para {UserId}.", lista.Count, context.UserId);
+        logger.LogInformation("Chatbot consultó {Total} solicitudes para {UserId}.", total, context.UserId);
 
-        var resumen = lista.Count == 0
+        var resumen = total == 0
             ? "No tienes postulaciones activas registradas."
-            : $"Tienes {lista.Count} postulación(es) activa(s): {pendientes} pendiente(s), {aceptadas} aceptada(s) y {rechazadas} rechazada(s).";
+            : $"Tienes {total} postulación(es) activa(s): {pendientes} pendiente(s), {aceptadas} aceptada(s) y {rechazadas} rechazada(s).";
         return ChatToolJson.Ok(resumen, items: items);
     }
 }
@@ -465,7 +473,7 @@ public sealed class EstadoNotificacionesTool(
             {
                 ["titulo"] = ChatPrivacy.Sanitize(n.Titulo),
                 ["mensaje"] = ChatPrivacy.Sanitize(n.Mensaje),
-                ["enlace"] = n.Enlace,
+                ["enlace"] = ChatPrivacy.Sanitize(n.Enlace),
                 ["leida"] = n.Leida,
                 ["fecha"] = n.Fecha,
             });

@@ -17,12 +17,13 @@ public sealed class ChatRateLimiter(
         public DateTime ExpiresAt;
     }
 
+    private static readonly TimeSpan ZonaPeru = TimeSpan.FromHours(-5);
     private readonly ConcurrentDictionary<string, Contador> _local = new();
 
     public async Task<ChatRateResult> CheckAsync(string userId, CancellationToken ct = default)
     {
         var ahora = DateTime.UtcNow;
-        var dia = ahora.ToString("yyyyMMdd");
+        var dia = ahora.Add(ZonaPeru).ToString("yyyyMMdd");
         var minuto = ahora.ToString("yyyyMMddHHmm");
         var dailyKey = $"skilllink:chatbot:rate:daily:{userId}:{dia}";
         var burstKey = $"skilllink:chatbot:rate:burst:{userId}:{minuto}";
@@ -88,10 +89,17 @@ public sealed class ChatRateLimiter(
     }
 
     private static TimeSpan hastaMedianoche(DateTime utc)
-        => utc.Date.AddDays(1) - utc;
+    {
+        // Perú no aplica horario de verano: el límite diario reinicia a las 00:00 locales.
+        var local = utc.Add(ZonaPeru);
+        return local.Date.AddDays(1) - local;
+    }
 
     private static int SegundosHastaMedianoche(DateTime utc)
-        => Math.Max(1, (int)(utc.Date.AddDays(1) - utc).TotalSeconds);
+    {
+        var local = utc.Add(ZonaPeru);
+        return Math.Max(1, (int)(local.Date.AddDays(1) - local).TotalSeconds);
+    }
 
     private static int SegundosHastaSiguienteMinuto(DateTime utc)
     {

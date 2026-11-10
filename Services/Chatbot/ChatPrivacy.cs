@@ -14,7 +14,7 @@ public static class ChatPrivacy
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     private static readonly Regex Telefono = new(
-        @"(?<!\d)(?:\+?51[\s-]?)?(?:9\d{8}|[67]\d{8})(?!\d)",
+        @"(?<!\d)(?:\+?51[\s.-]?)?(?:9(?:[\s.-]?\d){8}|[67](?:[\s.-]?\d){8})(?!\d)",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private static readonly Regex Ruc = new(

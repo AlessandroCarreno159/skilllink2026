@@ -7,7 +7,7 @@ Encuentra oportunidades. Conecta con talento.
 
 ## Asistente virtual (Gemini)
 
-El chatbot usa **Gemini 2.5 Flash** con *function calling* para consultar publicaciones, técnicos, postulaciones, notificaciones y el FAQ de la plataforma. Las respuestas se transmiten por el canal de Socket.io existente y se muestran en el widget flotante.
+El chatbot usa **Gemini con *function calling*** para consultar publicaciones, técnicos, postulaciones, notificaciones y el FAQ de la plataforma. Por defecto se configura con el modelo gratuito `gemini-flash-lite-latest` y un respaldo `gemini-3.1-flash-lite`, adecuado para un piloto académico sin datos reales. Las respuestas se transmiten por el canal de Socket.io existente y se muestran en el widget flotante.
 
 Configuración local:
 

@@ -11,6 +11,7 @@ namespace SkillLink_dotnet.Controllers;
 
 [Authorize]
 [Route("Chatbot")]
+[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public class ChatbotController(
     ApplicationDbContext db,
     UserManager<ApplicationUser> users,
