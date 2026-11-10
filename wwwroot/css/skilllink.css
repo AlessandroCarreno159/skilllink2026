@@ -469,12 +469,6 @@ input.btn-check:checked + .sk-star-btn { font-weight: 700; color: #3d2e00;
 }
 
 /* --- Chat en tiempo real (Socket.io + Redis) --- */
-#sk-chat-widget { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 1080; }
-.sk-chat-toggle { position: relative; width: 56px; height: 56px; border-radius: 50%; border: 0; color: #fff;
-  background: linear-gradient(135deg, #8d68ff, var(--sk-purple)); font-size: 1.4rem;
-  box-shadow: 0 14px 28px -10px rgba(75,43,184,.75), inset 0 1px 0 rgba(255,255,255,.35); }
-.sk-chat-toggle:hover { color: #fff; transform: translateY(-2px); }
-#sk-chat-badge { position: absolute; top: -2px; right: -2px; font-size: .68rem; }
 .sk-chat-panel { width: min(420px, 100vw); }
 .sk-chat-messages { overflow-y: auto; padding: .5rem .25rem; min-height: 220px; max-height: 60vh; }
 .sk-chat-msg { display: flex; flex-direction: column; margin-bottom: .65rem; }
@@ -485,6 +479,5 @@ input.btn-check:checked + .sk-star-btn { font-weight: 700; color: #3d2e00;
 .sk-chat-msg-peer .sk-chat-bubble { background: #f1ecff; border: 1px solid #d8c9ff; border-bottom-left-radius: 4px; }
 .sk-chat-msg-me .sk-chat-bubble { background: linear-gradient(135deg, #8d68ff, var(--sk-purple)); color: #fff; border-bottom-right-radius: 4px; }
 @media (max-width: 575.98px) {
-  #sk-chat-widget { right: .85rem; bottom: .85rem; }
   .sk-chat-messages { max-height: 55vh; }
 }

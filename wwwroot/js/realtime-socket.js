@@ -27,8 +27,6 @@
   function $(id) { return document.getElementById(id); }
 
   function initEls() {
-    el.toggle = $('sk-chat-toggle');
-    el.badge = $('sk-chat-badge');
     el.panel = $('skChatPanel');
     el.title = $('sk-chat-title');
     el.empty = $('sk-chat-empty');
@@ -247,13 +245,6 @@
       });
       el.panel.addEventListener('hidden.bs.offcanvas', function () {
         state.panelOpen = false;
-      });
-    }
-
-    if (el.toggle) {
-      el.toggle.addEventListener('click', function () {
-        if (!state.peer) toast('Mensajes', 'Abre un chat desde una postulación o publicación.');
-        showPanel();
       });
     }
 

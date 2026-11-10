@@ -7,9 +7,6 @@
   z-index: 10050;
 }
 
-/* Si existe el chat privado, el botón del asistente se coloca a su izquierda. */
-#sk-bot-widget.sk-bot-widget-offset { right: 5.5rem; }
-
 .sk-bot-toggle {
   display: inline-flex;
   align-items: center;
@@ -77,6 +74,11 @@
   opacity: 0.9;
 }
 .sk-bot-head-actions .btn-link:hover { opacity: 1; }
+.sk-bot-head-actions .btn-link.activo {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 0.35rem;
+}
 
 .sk-bot-messages {
   flex: 1 1 auto;
@@ -242,7 +244,6 @@ a.sk-bot-card:hover { border-color: var(--sk-purple, #7b53f5); box-shadow: 0 5px
 
 @media (max-width: 575.98px) {
   #sk-bot-widget { right: 0.75rem; bottom: 0.75rem; }
-  #sk-bot-widget.sk-bot-widget-offset { right: 4.9rem; }
   .sk-bot-toggle { padding: 0.65rem; }
   .sk-bot-toggle-label { display: none; }
   .sk-bot-panel {

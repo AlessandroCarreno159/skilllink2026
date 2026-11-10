@@ -8,6 +8,8 @@
   var el = {
     toggle: document.getElementById('sk-bot-toggle'),
     panel: document.getElementById('sk-bot-panel'),
+    minimize: document.getElementById('sk-bot-minimize'),
+    pin: document.getElementById('sk-bot-pin'),
     close: document.getElementById('sk-bot-close'),
     clear: document.getElementById('sk-bot-clear'),
     messages: document.getElementById('sk-bot-messages'),
@@ -22,10 +24,12 @@
     conversationId: '',
     pending: null,
     busy: false,
-    enabled: true
+    enabled: true,
+    pinned: false
   };
 
   var MAX_CHARS = 1000;
+  var PIN_KEY = 'skilllink.chatbot.pinned';
 
   function csrfToken() {
     var input = document.querySelector('#sk-bot-antiforgery input[name="__RequestVerificationToken"]');
@@ -72,6 +76,39 @@
     if (!el.panel) return;
     el.panel.classList.add('d-none');
     if (el.toggle) el.toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  function loadPinned() {
+    try {
+      return window.localStorage.getItem(PIN_KEY) === '1';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function savePinned() {
+    try {
+      window.localStorage.setItem(PIN_KEY, state.pinned ? '1' : '0');
+    } catch (error) {
+      /* Sin persistencia si el navegador bloquea localStorage. */
+    }
+  }
+
+  function updatePinButton() {
+    if (!el.pin) return;
+    var label = state.pinned ? 'Desfijar ventana' : 'Fijar ventana';
+    el.pin.classList.toggle('activo', state.pinned);
+    el.pin.setAttribute('aria-pressed', state.pinned ? 'true' : 'false');
+    el.pin.setAttribute('title', label);
+    el.pin.setAttribute('aria-label', label);
+    var icon = el.pin.querySelector('i');
+    if (icon) icon.className = 'bi ' + (state.pinned ? 'bi-pin-angle-fill' : 'bi-pin-angle');
+  }
+
+  function togglePinned() {
+    state.pinned = !state.pinned;
+    savePinned();
+    updatePinButton();
   }
 
   function makeMessage(role, text) {
@@ -470,6 +507,8 @@
       if (!el.panel) return;
       if (el.panel.classList.contains('d-none')) openPanel(); else closePanel();
     });
+    if (el.minimize) el.minimize.addEventListener('click', closePanel);
+    if (el.pin) el.pin.addEventListener('click', togglePinned);
     if (el.close) el.close.addEventListener('click', closePanel);
     if (el.clear) el.clear.addEventListener('click', limpiar);
 
@@ -492,7 +531,7 @@
 
     document.addEventListener('click', function (event) {
       if (!el.panel || el.panel.classList.contains('d-none')) return;
-      if (root.contains(event.target)) return;
+      if (state.pinned || root.contains(event.target)) return;
       closePanel();
     });
 
@@ -510,7 +549,8 @@
   }
 
   function init() {
-    if (document.getElementById('sk-chat-widget')) root.classList.add('sk-bot-widget-offset');
+    state.pinned = loadPinned();
+    updatePinButton();
     bind();
     cargarEstado();
     cargarHistorial();
