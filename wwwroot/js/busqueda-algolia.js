@@ -27,6 +27,42 @@
     var input = root.querySelector('#inputBusqueda') || root.querySelector('#sk-search-input');
     var clearBtn = root.querySelector('[data-sk-search-clear]') || root.querySelector('.sk-search-clear');
     var form = root.querySelector('form');
+    var filterForm = document.querySelector('.sk-filter-form');
+
+    function setHidden(formEl, name, value) {
+      var field = formEl.querySelector('input[type="hidden"][name="' + name + '"]');
+      if (!field) {
+        field = document.createElement('input');
+        field.type = 'hidden';
+        field.name = name;
+        formEl.appendChild(field);
+      }
+      field.value = value == null ? '' : value;
+    }
+
+    function syncFiltersToSearch() {
+      if (!filterForm) return;
+      ['modalidad', 'categoria', 'estrellas', 'opCalif'].forEach(function (name) {
+        var select = filterForm.querySelector('select[name="' + name + '"]');
+        var checked = filterForm.querySelector('[name="' + name + '"]:checked');
+        var value = select ? select.value : (checked ? checked.value : '');
+        setHidden(form, name, value);
+      });
+    }
+
+    function syncCityToFilter() {
+      if (!filterForm) return;
+      var city = form.querySelector('select[name="ciudad"]');
+      setHidden(filterForm, 'ciudad', city ? city.value : '');
+      setHidden(filterForm, 'q', input.value);
+    }
+
+    if (filterForm) {
+      form.addEventListener('submit', syncFiltersToSearch);
+      filterForm.addEventListener('submit', syncCityToFilter);
+      filterForm.addEventListener('change', syncFiltersToSearch);
+      filterForm.addEventListener('input', syncFiltersToSearch);
+    }
 
     function resolvePanel() {
       var el = document.getElementById('search-results-container');

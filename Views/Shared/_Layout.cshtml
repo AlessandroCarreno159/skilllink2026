@@ -33,12 +33,6 @@
                             {
                                 <li class="nav-item"><a class="nav-link" asp-controller="Solicitudes" asp-action="Recibidas">Postulaciones</a></li>
                             }
-                            else if (User.IsInRole("admin"))
-                            {
-                                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Usuarios">Usuarios</a></li>
-                                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Publicaciones">Publicaciones</a></li>
-                                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Denuncias">Denuncias</a></li>
-                            }
                             @if (!User.IsInRole("admin"))
                             {
                                 <li class="nav-item"><a class="nav-link" asp-controller="Feed" asp-action="Create" title="Nueva publicación"><i class="bi bi-plus-lg"></i></a></li>
@@ -46,6 +40,16 @@
                         }
                     </ul>
                     </div>
+                    @if (User.IsInRole("admin"))
+                    {
+                        <div class="sk-navpill">
+                        <ul class="navbar-nav navbar-skilllink-left align-items-xl-center">
+                            <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Usuarios">Usuarios</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Publicaciones">Publicaciones</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Denuncias">Denuncias</a></li>
+                        </ul>
+                        </div>
+                    }
                     <div class="sk-navpill">
                     <ul class="navbar-nav navbar-skilllink-right align-items-xl-center">
                         @if (User.Identity?.IsAuthenticated == true)
