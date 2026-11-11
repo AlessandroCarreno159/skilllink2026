@@ -1,13 +1,54 @@
 @* Mis notificaciones *@
 @model IEnumerable<SkillLink_dotnet.Models.Notificacion>
-@{ ViewData["Title"] = "Notificaciones"; }
-<h2 class="sk-section-title">Notificaciones</h2>
-@foreach (var n in Model)
-{
-  <div class="card mb-2 sk-item @(n.Leida ? "" : "border-primary")"><div class="card-body">
-    <strong>@n.Titulo</strong>
-    <p class="mb-1">@n.Mensaje</p>
-    <small class="text-muted">@n.Fecha.ToLocalTime()</small>
-    @if (!string.IsNullOrEmpty(n.Enlace)) { <a href="@n.Enlace" class="ms-2">Ver</a> }
-  </div></div>
+@{
+  ViewData["Title"] = "Notificaciones";
+  var vacio = "No tienes notificaciones por ahora.";
 }
+<div class="sk-notif-page">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+      <h2 class="sk-section-title mb-1">Notificaciones</h2>
+      <p class="text-muted mb-0">Revisa las novedades de tu cuenta.</p>
+    </div>
+    @if (Model.Any())
+    {
+      <form asp-action="Limpiar" method="post" onsubmit="return confirm('¿Eliminar todas tus notificaciones?');">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-sm sk-btn-lila"><i class="bi bi-trash3"></i> Limpiar Notificaciones</button>
+      </form>
+    }
+  </div>
+
+  @if (!Model.Any())
+  {
+    <partial name="_EmptyState" model="vacio" />
+  }
+  else
+  {
+    <div class="d-flex flex-column gap-2">
+      @foreach (var n in Model)
+      {
+        <article class="sk-notif-item @(n.Leida ? "" : "is-unread")">
+          <div class="sk-notif-body">
+            <h3 class="sk-notif-title">@n.Titulo</h3>
+            <p class="sk-notif-message mb-1">@n.Mensaje</p>
+            <div class="sk-notif-meta">
+              <span><i class="bi bi-clock"></i> @n.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+              @if (!string.IsNullOrEmpty(n.Enlace))
+              {
+                <a href="@n.Enlace">Ver</a>
+              }
+            </div>
+          </div>
+          <form asp-action="Eliminar" method="post" class="sk-notif-delete-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@n.Id" />
+            <button type="submit" class="sk-notif-delete" title="Eliminar notificación" aria-label="Eliminar notificación">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </form>
+        </article>
+      }
+    </div>
+  }
+</div>
