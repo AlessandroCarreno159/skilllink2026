@@ -117,23 +117,26 @@
     @if (User.Identity?.IsAuthenticated == true && !string.IsNullOrWhiteSpace(Cfg["Realtime:Url"]))
     {
         <div class="offcanvas offcanvas-end sk-chat-panel" tabindex="-1" id="skChatPanel" aria-labelledby="skChatTitle">
-            <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="skChatTitle"><i class="bi bi-chat-dots-fill"></i> <span id="sk-chat-title">Mensajes</span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+            <div class="sk-chat-header">
+                <div class="sk-chat-avatar" aria-hidden="true"><i class="bi bi-chat-dots-fill"></i></div>
+                <div class="sk-chat-heading">
+                    <h5 class="sk-chat-heading-name" id="sk-chat-title">Mensajes</h5>
+                    <span class="sk-chat-status is-online" id="sk-chat-status">En línea</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white sk-chat-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
             </div>
-            <div class="offcanvas-body d-flex flex-column">
-                <p id="sk-chat-empty" class="text-muted small mb-0">
-                    Abre un chat desde una postulación o publicación para conversar en tiempo real.
-                </p>
-                <div id="sk-chat-messages" class="sk-chat-messages flex-grow-1"></div>
-                <div id="sk-chat-typing" class="small text-muted"></div>
-                <form id="sk-chat-form" class="mt-2 d-none">
-                    <div class="input-group">
-                        <input id="sk-chat-input" class="form-control" maxlength="2000" autocomplete="off" placeholder="Escribe un mensaje..." />
-                        <button class="btn btn-primary" type="submit"><i class="bi bi-send-fill"></i></button>
-                    </div>
-                </form>
+            <div class="sk-chat-body">
+                <div id="sk-chat-empty" class="sk-chat-empty">
+                    <i class="bi bi-chat-heart-fill" aria-hidden="true"></i>
+                    <p class="mb-0">Abre un chat desde una postulación o publicación para conversar en tiempo real.</p>
+                </div>
+                <div id="sk-chat-messages" class="sk-chat-messages"></div>
+                <div id="sk-chat-typing" class="sk-chat-typing"></div>
             </div>
+            <form id="sk-chat-form" class="sk-chat-form d-none" autocomplete="off">
+                <input id="sk-chat-input" class="sk-chat-input" maxlength="2000" autocomplete="off" placeholder="Escribe un mensaje…" aria-label="Mensaje" />
+                <button class="sk-chat-send" type="submit" aria-label="Enviar mensaje"><i class="bi bi-send-fill"></i></button>
+            </form>
         </div>
     }
 
