@@ -88,7 +88,7 @@
         </div>
       </form>
     }
-    @if (User.Identity?.IsAuthenticated == true)
+    @if (User.Identity?.IsAuthenticated == true && !User.IsInRole("admin"))
     {
       <button class="btn btn-sm btn-outline-secondary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#denunciarPublicacion" aria-expanded="false" aria-controls="denunciarPublicacion">
         <i class="bi bi-flag"></i> Denunciar publicación
@@ -114,7 +114,7 @@
     }
   </div>
   <div class="col-lg-8">
-    <div class="sk-detail-panel p-4">
+    <div class="sk-detail-panel p-4 h-100">
       <div class="row g-4">
         <div class="col-md-7">
           <img src="@Uploads.Url(Model.Imagen)" alt="Imagen de la publicación" class="img-fluid rounded" style="width:100%;max-height:320px;object-fit:cover" />
@@ -141,132 +141,138 @@
 </div>
 <div class="row g-4 mt-3 align-items-stretch">
   <div class="col-lg-4">
-    <div class="card p-3 mb-0 h-100">
-      <h6 class="sk-serif mb-2"><i class="bi bi-star-fill sk-ic-star"></i> Dejar calificación</h6>
+    <div class="card p-3 mb-0 d-flex flex-column" id="ratingModule">
+      <h6 class="sk-serif mb-0"><i class="bi bi-star-fill sk-ic-star"></i> Dejar calificación</h6>
       @if (miVoto.HasValue)
       {
-        <p class="sk-meta mb-2">Tu voto: <strong>@miVoto / 5</strong> (puedes actualizarlo)</p>
+        <p class="sk-meta mt-2 mb-0">Tu voto: <strong>@miVoto / 5</strong> (puedes actualizarlo)</p>
       }
       @if (User.Identity?.IsAuthenticated == true)
       {
-        <form asp-controller="Feed" asp-action="Calificar" asp-route-id="@Model.Id" method="post" class="d-flex align-items-center gap-2 flex-wrap">
+        <form asp-controller="Feed" asp-action="Calificar" asp-route-id="@Model.Id" method="post" class="d-flex flex-column gap-2 mt-3 my-auto">
           @Html.AntiForgeryToken()
-          <div class="btn-group" role="group" aria-label="Estrellas">
+          <div class="btn-group w-100" role="group" aria-label="Estrellas">
             @for (var s = 1; s <= 5; s++)
             {
               <input type="radio" class="btn-check" name="calificacion" id="star-@s" value="@s" @(miVoto == s ? "checked" : "") required />
-              <label class="btn btn-sm sk-star-btn" for="star-@s">@s ★</label>
+              <label class="btn btn-sm sk-star-btn flex-fill" for="star-@s">@s ★</label>
             }
           </div>
           <input name="comentario" class="form-control form-control-sm" placeholder="Comentario (opcional)" />
-          <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-check-circle-fill"></i> @(miVoto.HasValue ? "Actualizar" : "Calificar")</button>
+          <button class="btn btn-sm btn-primary w-100" type="submit"><i class="bi bi-check-circle-fill"></i> @(miVoto.HasValue ? "Actualizar" : "Calificar")</button>
         </form>
       }
       else
       {
-        <p class="sk-meta mb-0"><a asp-controller="Account" asp-action="Login">Iniciar sesión</a> para calificar esta publicación.</p>
+        <p class="sk-meta mt-3 mb-0"><a asp-controller="Account" asp-action="Login">Iniciar sesión</a> para calificar esta publicación.</p>
       }
     </div>
   </div>
   <div class="col-lg-8">
-    <div class="card p-3 h-100">
-      <h4 class="sk-section-title mb-2"><i class="bi bi-star-fill sk-ic-star"></i> Calificaciones (@ratingTotal)</h4>
-      @if (primeraValoracion is not null)
-      {
-        var v = primeraValoracion;
-        var vUrl = ImageUploadService.PerfilUrl(v.Autor);
-        <div class="card mb-0 sk-item"><div class="card-body">
-          <div class="d-flex gap-2 align-items-start">
-            @if (vUrl is null)
-            {
-              <img src="@Uploads.Avatar(v.Autor)" alt="" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover" loading="lazy" />
-              <div><strong>@ImageUploadService.NombrePublico(v.Autor)</strong></div>
-            }
-            else
-            {
-              <a href="@vUrl"><img src="@Uploads.Avatar(v.Autor)" alt="" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover" loading="lazy" /></a>
-              <div><a href="@vUrl" class="text-decoration-none"><strong>@ImageUploadService.NombrePublico(v.Autor)</strong></a></div>
-            }
-            <span class="ms-auto text-warning">@for (var i = 0; i < (v.Calificacion ?? 0); i++) {<i class="bi bi-star-fill"></i>}</span>
-          </div>
-          @if (!string.IsNullOrWhiteSpace(v.Comentario))
-          {
-            <p class="mb-1 mt-2">@v.Comentario</p>
-          }
-          <small class="text-muted">@v.Fecha.ToLocalTime()</small>
-          @foreach (var r in respuestasVal.Where(x => x.ParentId == v.Id))
-          {
-            var rUrl = ImageUploadService.PerfilUrl(r.Autor);
-            <div class="ms-4 mt-2 p-2 border-start border-3">
-              <strong>@ImageUploadService.NombrePublico(r.Autor)</strong>
-              <span class="text-muted">→ @(r.RespuestaAUsuarioId == v.AutorId ? ImageUploadService.NombrePublico(v.Autor) : "")</span><br />
-              @r.Comentario<br />
-              <small class="text-muted">@r.Fecha.ToLocalTime()</small>
-            </div>
-          }
-          @if (User.Identity?.IsAuthenticated == true)
-          {
-            <form asp-controller="Feed" asp-action="ResponderValoracion" asp-route-valoracionId="@v.Id" method="post" class="mt-2">
-              @Html.AntiForgeryToken()
-              <div class="input-group input-group-sm"><input name="comentario" class="form-control" placeholder="Responder…" /><button class="btn btn-outline-secondary">Responder</button></div>
-            </form>
-          }
-        </div></div>
-
-        @if (totalResenas > 1)
+    <div class="card p-3 h-100" id="reviewsModule">
+      <div id="reviewsCollapsed">
+        <h4 class="sk-section-title mb-2"><i class="bi bi-star-fill sk-ic-star"></i> Calificaciones (@ratingTotal)</h4>
+        @if (primeraValoracion is not null)
         {
-          <button class="sk-btn-comments mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#resenas" aria-expanded="false" aria-controls="resenas">
-            <i class="bi bi-star-fill"></i> Ver Reseñas (@totalResenas)
-          </button>
-          <div class="collapse mt-3" id="resenas">
-            @foreach (var extra in valoracionesList.Skip(1))
+          var v = primeraValoracion;
+          var vUrl = ImageUploadService.PerfilUrl(v.Autor);
+          <div class="card mb-0 sk-item"><div class="card-body">
+            <div class="d-flex gap-2 align-items-start">
+              @if (vUrl is null)
+              {
+                <img src="@Uploads.Avatar(v.Autor)" alt="" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover" loading="lazy" />
+                <div><strong>@ImageUploadService.NombrePublico(v.Autor)</strong></div>
+              }
+              else
+              {
+                <a href="@vUrl"><img src="@Uploads.Avatar(v.Autor)" alt="" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover" loading="lazy" /></a>
+                <div><a href="@vUrl" class="text-decoration-none"><strong>@ImageUploadService.NombrePublico(v.Autor)</strong></a></div>
+              }
+              <span class="ms-auto text-warning">@for (var i = 0; i < (v.Calificacion ?? 0); i++) {<i class="bi bi-star-fill"></i>}</span>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(v.Comentario))
             {
-              var ve = extra;
-              var veUrl = ImageUploadService.PerfilUrl(ve.Autor);
-              <div class="card mb-2 sk-item"><div class="card-body">
-                <div class="d-flex gap-2 align-items-start">
-                  @if (veUrl is null)
-                  {
-                    <img src="@Uploads.Avatar(ve.Autor)" alt="" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover" loading="lazy" />
-                    <div><strong>@ImageUploadService.NombrePublico(ve.Autor)</strong></div>
-                  }
-                  else
-                  {
-                    <a href="@veUrl"><img src="@Uploads.Avatar(ve.Autor)" alt="" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover" loading="lazy" /></a>
-                    <div><a href="@veUrl" class="text-decoration-none"><strong>@ImageUploadService.NombrePublico(ve.Autor)</strong></a></div>
-                  }
-                  <span class="ms-auto text-warning">@for (var i = 0; i < (ve.Calificacion ?? 0); i++) {<i class="bi bi-star-fill"></i>}</span>
-                </div>
-                @if (!string.IsNullOrWhiteSpace(ve.Comentario))
-                {
-                  <p class="mb-1 mt-2">@ve.Comentario</p>
-                }
-                <small class="text-muted">@ve.Fecha.ToLocalTime()</small>
-                @foreach (var re in respuestasVal.Where(x => x.ParentId == ve.Id))
-                {
-                  var reUrl = ImageUploadService.PerfilUrl(re.Autor);
-                  <div class="ms-4 mt-2 p-2 border-start border-3">
-                    <strong>@ImageUploadService.NombrePublico(re.Autor)</strong>
-                    <span class="text-muted">→ @(re.RespuestaAUsuarioId == ve.AutorId ? ImageUploadService.NombrePublico(ve.Autor) : "")</span><br />
-                    @re.Comentario<br />
-                    <small class="text-muted">@re.Fecha.ToLocalTime()</small>
-                  </div>
-                }
-                @if (User.Identity?.IsAuthenticated == true)
-                {
-                  <form asp-controller="Feed" asp-action="ResponderValoracion" asp-route-valoracionId="@ve.Id" method="post" class="mt-2">
-                    @Html.AntiForgeryToken()
-                    <div class="input-group input-group-sm"><input name="comentario" class="form-control" placeholder="Responder…" /><button class="btn btn-outline-secondary">Responder</button></div>
-                  </form>
-                }
-              </div></div>
+              <p class="mb-1 mt-2">@v.Comentario</p>
             }
-          </div>
+            <small class="text-muted">@v.Fecha.ToLocalTime()</small>
+            @foreach (var r in respuestasVal.Where(x => x.ParentId == v.Id))
+            {
+              var rUrl = ImageUploadService.PerfilUrl(r.Autor);
+              <div class="ms-4 mt-2 p-2 border-start border-3">
+                <strong>@ImageUploadService.NombrePublico(r.Autor)</strong>
+                <span class="text-muted">→ @(r.RespuestaAUsuarioId == v.AutorId ? ImageUploadService.NombrePublico(v.Autor) : "")</span><br />
+                @r.Comentario<br />
+                <small class="text-muted">@r.Fecha.ToLocalTime()</small>
+              </div>
+            }
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+              <form asp-controller="Feed" asp-action="ResponderValoracion" asp-route-valoracionId="@v.Id" method="post" class="mt-2">
+                @Html.AntiForgeryToken()
+                <div class="input-group input-group-sm"><input name="comentario" class="form-control" placeholder="Responder…" /><button class="btn btn-outline-secondary">Responder</button></div>
+              </form>
+            }
+          </div></div>
+
+          @if (totalResenas > 1)
+          {
+            <button class="sk-btn-comments mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#resenas" aria-expanded="false" aria-controls="resenas">
+              <i class="bi bi-star-fill"></i> Ver Reseñas (@totalResenas)
+            </button>
+          }
         }
-      }
-      else
+        else
+        {
+          <p class="sk-meta mb-0">Aún no hay reseñas para esta publicación.</p>
+        }
+      </div>
+
+      @if (totalResenas > 1)
       {
-        <p class="sk-meta mb-0">Aún no hay reseñas para esta publicación.</p>
+        <div class="collapse mt-3" id="resenas">
+          @foreach (var extra in valoracionesList.Skip(1))
+          {
+            var ve = extra;
+            var veUrl = ImageUploadService.PerfilUrl(ve.Autor);
+            <div class="card mb-2 sk-item"><div class="card-body">
+              <div class="d-flex gap-2 align-items-start">
+                @if (veUrl is null)
+                {
+                  <img src="@Uploads.Avatar(ve.Autor)" alt="" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover" loading="lazy" />
+                  <div><strong>@ImageUploadService.NombrePublico(ve.Autor)</strong></div>
+                }
+                else
+                {
+                  <a href="@veUrl"><img src="@Uploads.Avatar(ve.Autor)" alt="" class="rounded-circle flex-shrink-0" style="width:40px;height:40px;object-fit:cover" loading="lazy" /></a>
+                  <div><a href="@veUrl" class="text-decoration-none"><strong>@ImageUploadService.NombrePublico(ve.Autor)</strong></a></div>
+                }
+                <span class="ms-auto text-warning">@for (var i = 0; i < (ve.Calificacion ?? 0); i++) {<i class="bi bi-star-fill"></i>}</span>
+              </div>
+              @if (!string.IsNullOrWhiteSpace(ve.Comentario))
+              {
+                <p class="mb-1 mt-2">@ve.Comentario</p>
+              }
+              <small class="text-muted">@ve.Fecha.ToLocalTime()</small>
+              @foreach (var re in respuestasVal.Where(x => x.ParentId == ve.Id))
+              {
+                var reUrl = ImageUploadService.PerfilUrl(re.Autor);
+                <div class="ms-4 mt-2 p-2 border-start border-3">
+                  <strong>@ImageUploadService.NombrePublico(re.Autor)</strong>
+                  <span class="text-muted">→ @(re.RespuestaAUsuarioId == ve.AutorId ? ImageUploadService.NombrePublico(ve.Autor) : "")</span><br />
+                  @re.Comentario<br />
+                  <small class="text-muted">@re.Fecha.ToLocalTime()</small>
+                </div>
+              }
+              @if (User.Identity?.IsAuthenticated == true)
+              {
+                <form asp-controller="Feed" asp-action="ResponderValoracion" asp-route-valoracionId="@ve.Id" method="post" class="mt-2">
+                  @Html.AntiForgeryToken()
+                  <div class="input-group input-group-sm"><input name="comentario" class="form-control" placeholder="Responder…" /><button class="btn btn-outline-secondary">Responder</button></div>
+                </form>
+              }
+            </div></div>
+          }
+        </div>
       }
     </div>
   </div>
@@ -330,4 +336,37 @@
     </div></div>
   }
 </div>
+
+<script>
+  (function () {
+    const rating = document.getElementById('ratingModule');
+    const reviews = document.getElementById('reviewsModule');
+    const collapsed = document.getElementById('reviewsCollapsed');
+    if (!rating || !reviews || !collapsed) return;
+
+    function syncRatingHeight() {
+      if (window.matchMedia('(max-width: 991.98px)').matches) {
+        rating.style.height = '';
+        return;
+      }
+
+      const styles = window.getComputedStyle(reviews);
+      const padding = (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0);
+      const collapsedHeight = collapsed.offsetHeight + padding;
+
+      const previous = rating.style.height;
+      rating.style.height = 'auto';
+      const naturalHeight = rating.offsetHeight;
+      rating.style.height = previous;
+
+      rating.style.height = Math.max(collapsedHeight, naturalHeight) + 'px';
+    }
+
+    syncRatingHeight();
+    window.addEventListener('resize', syncRatingHeight);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(syncRatingHeight);
+    }
+  })();
+</script>
 
