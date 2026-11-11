@@ -34,6 +34,15 @@ public class DashboardController(
                 .ToListAsync();
             ViewBag.Postulaciones = lista.Select(x => (x.S, x.P, x.Razon)).ToList();
         }
+        else if (yo.Rol == Roles.Empresa)
+        {
+            ViewBag.PostulacionesRecibidas = await db.Solicitudes
+                .Include(s => s.Publicacion)
+                .Include(s => s.Trabajador).ThenInclude(t => t!.Perfil)
+                .Where(s => s.Publicacion!.AutorId == yo.Id && s.Activa)
+                .OrderByDescending(s => s.FechaPostulacion)
+                .ToListAsync();
+        }
         return View();
     }
 }

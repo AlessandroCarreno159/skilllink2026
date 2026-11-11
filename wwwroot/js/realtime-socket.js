@@ -18,7 +18,9 @@
     typingHideTimer: null,
     heartbeat: null,
     unreadChats: 0,
-    panelOpen: false
+    panelOpen: false,
+    pendingChat: null,
+    connectWaitTimer: null
   };
 
   var el = {};
@@ -156,29 +158,105 @@
     if (panel) panel.show();
   }
 
-  function openChat(peerId, name) {
-    if (!peerId || (state.me && peerId === state.me.userId)) return;
-    if (!state.socket || !state.socket.connected) {
-      toast('Chat no disponible', 'El servicio de tiempo real aún no está conectado.');
-      return;
-    }
+  function connectionReady() {
+    return !!(state.socket && state.socket.connected);
+  }
 
+  function setChatStatus(text, mode) {
+    var status = document.getElementById('sk-chat-status');
+    if (!status) return;
+    status.textContent = text;
+    status.classList.remove('is-online', 'is-connecting', 'is-offline');
+    status.classList.add('is-' + (mode || 'online'));
+  }
+
+  function renderConnecting() {
+    if (!el.messages) return;
+    el.messages.innerHTML = '';
+
+    var box = document.createElement('div');
+    box.className = 'sk-chat-connecting';
+
+    var spinner = document.createElement('span');
+    spinner.className = 'sk-chat-connecting-spinner';
+
+    var label = document.createElement('span');
+    label.textContent = 'Conectando con ' + state.peerName + '…';
+
+    box.appendChild(spinner);
+    box.appendChild(label);
+    el.messages.appendChild(box);
+  }
+
+  // Muestra el panel de inmediato con el nombre del contacto, sin exigir que
+  // el socket ya esté listo (evita el aviso "chat no disponible" prematuro).
+  function showChatShell(peerId, name) {
     state.peer = String(peerId);
     state.peerName = name || 'Usuario';
-    state.room = chatRoomFor(state.me.userId, state.peer);
+    state.room = state.me ? chatRoomFor(state.me.userId, state.peer) : null;
     state.seen = Object.create(null);
     state.unreadChats = 0;
     updateChatBadge();
 
     if (el.title) el.title.textContent = state.peerName;
     if (el.empty) el.empty.classList.add('d-none');
-    if (el.form) el.form.classList.remove('d-none');
+    if (el.form) el.form.classList.add('d-none');
+    if (el.typing) el.typing.textContent = '';
+    renderConnecting();
+    showPanel();
+  }
+
+  // Ejecuta la apertura real una vez que el socket está conectado.
+  function commitChat() {
+    if (!state.pendingChat || !connectionReady()) return;
+    var pending = state.pendingChat;
+    state.pendingChat = null;
+    if (state.connectWaitTimer) {
+      clearTimeout(state.connectWaitTimer);
+      state.connectWaitTimer = null;
+    }
+
+    state.peer = pending.peerId;
+    state.peerName = pending.name;
+    state.room = chatRoomFor(state.me.userId, state.peer);
+    state.seen = Object.create(null);
+
+    if (el.title) el.title.textContent = state.peerName;
+    if (el.empty) el.empty.classList.add('d-none');
     if (el.messages) el.messages.innerHTML = '';
     if (el.typing) el.typing.textContent = '';
+    if (el.form) el.form.classList.remove('d-none');
 
+    setChatStatus('En línea', 'online');
     state.socket.emit('chat:open', { peerId: state.peer });
-    showPanel();
     if (el.input) setTimeout(function () { el.input.focus(); }, 350);
+  }
+
+  function openChat(peerId, name) {
+    if (!peerId || (state.me && peerId === state.me.userId)) return;
+
+    state.pendingChat = { peerId: String(peerId), name: name || 'Usuario' };
+    showChatShell(state.pendingChat.peerId, state.pendingChat.name);
+
+    if (connectionReady()) {
+      commitChat();
+      return;
+    }
+
+    setChatStatus('Conectando…', 'connecting');
+    if (!state.connectWaitTimer) {
+      state.connectWaitTimer = setTimeout(function () {
+        state.connectWaitTimer = null;
+        if (connectionReady() || !state.pendingChat) return;
+
+        setChatStatus('Sin conexión', 'offline');
+        var retryPeer = state.pendingChat.peerId;
+        var retryName = state.pendingChat.name;
+        toast('Chat no disponible', 'El servicio de tiempo real no responde. Intenta de nuevo en unos segundos.', null, function () {
+          openChat(retryPeer, retryName);
+        });
+      }, 12000);
+    }
   }
 
   function onChatMessage(msg) {
@@ -210,6 +288,8 @@
     if (el.messages) el.messages.innerHTML = '';
     (data.messages || []).forEach(appendMessage);
     scrollChat();
+    if (el.form) el.form.classList.remove('d-none');
+    setChatStatus('En línea', 'online');
   }
 
   function onTyping(data) {
@@ -315,11 +395,20 @@
 
         socket.on('connect', function () {
           startHeartbeat();
-          if (state.peer) socket.emit('chat:open', { peerId: state.peer });
+          if (state.pendingChat) {
+            commitChat();
+          } else if (state.peer) {
+            setChatStatus('En línea', 'online');
+            socket.emit('chat:open', { peerId: state.peer });
+          }
         });
-        socket.on('disconnect', stopHeartbeat);
+        socket.on('disconnect', function () {
+          stopHeartbeat();
+          if (state.peer) setChatStatus('Reconectando…', 'connecting');
+        });
         socket.on('connect_error', function (error) {
           console.warn('[realtime] No se pudo conectar:', error && error.message);
+          if (state.peer) setChatStatus('Sin conexión', 'offline');
         });
 
         socket.on('notification:new', function (payload) {

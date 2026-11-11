@@ -53,3 +53,18 @@
     wrap.appendChild(name);
   });
 })();
+
+// --- Altura del header: mantiene los paneles flotantes debajo de la barra fija ---
+(function () {
+  var header = document.querySelector('.navbar-skilllink');
+  if (!header) return;
+  function sync() {
+    document.documentElement.style.setProperty('--sk-header-h', header.offsetHeight + 'px');
+  }
+  sync();
+  window.addEventListener('resize', sync);
+  window.addEventListener('load', sync);
+  if (window.ResizeObserver) {
+    new ResizeObserver(sync).observe(header);
+  }
+})();

@@ -1,0 +1,36 @@
+@* Parcial: tabla de postulaciones recibidas de la empresa (Panel + Recibidas) *@
+@model List<SkillLink_dotnet.Models.Solicitud>
+@if (Model.Count == 0)
+{
+  <partial name="_EmptyState" model='"No hay postulaciones vigentes."' />
+}
+else
+{
+  <table class="table table-striped">
+    <thead><tr><th>Oferta</th><th>Mensaje</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+    <tbody>
+    @foreach (var s in Model)
+    {
+      <tr>
+        <td>Oferta #@s.PublicacionId</td>
+        <td>@s.Mensaje</td>
+        <td><span class="badge bg-secondary">@s.Estado</span></td>
+        <td>@s.FechaPostulacion.ToLocalTime()</td>
+        <td>
+          <button type="button" class="btn btn-sm btn-outline-primary me-1"
+                  data-chat-user="@s.TrabajadorId"
+                  data-chat-name="@(s.Trabajador?.Perfil?.NombreCompleto ?? s.Trabajador?.UserName ?? "Postulante")">
+            <i class="bi bi-chat-dots-fill"></i> Chatear
+          </button>
+          <form asp-action="Gestionar" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@s.Id" />
+            <button name="accion" value="aceptar" class="btn btn-sm btn-success">Aceptar</button>
+            <button name="accion" value="rechazar" class="btn btn-sm btn-danger">Rechazar</button>
+          </form>
+        </td>
+      </tr>
+    }
+    </tbody>
+  </table>
+}
