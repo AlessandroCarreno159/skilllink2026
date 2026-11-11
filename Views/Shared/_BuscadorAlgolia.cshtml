@@ -23,6 +23,7 @@
     ? (Cfg["Algolia:PerfilesIndexName"] ?? $"{indexPublicaciones}_perfiles")
     : indexPublicaciones;
   var controlador = esPerfiles ? "PerfilesFeed" : "Feed";
+  var extras = ViewData["SearchExtraFields"] as IEnumerable<KeyValuePair<string, string?>>;
   var placeholder = esPerfiles
     ? (profileTipo == "empresa" ? "Busca empresas, sectores o ciudades…" : "Busca personas, oficios o habilidades…")
     : "Busca oficios, habilidades u oportunidades…";
@@ -38,10 +39,20 @@
      data-details-base="@Url.Action("Details", "Feed")"
      data-feed-url="@Url.Action("Index", "Feed")"
      data-perfiles-url="@Url.Action("Index", "PerfilesFeed")">
-  <form class="sk-search-form @(esPerfiles ? "sk-search-form--filtros" : "")" role="search" asp-controller="@controlador" asp-action="Index" method="get" autocomplete="off">
+  <form class="sk-search-form @(esPerfiles || conCiudad ? "sk-search-form--filtros" : "")" role="search" asp-controller="@controlador" asp-action="Index" method="get" autocomplete="off">
     @if (esPerfiles)
     {
       <input type="hidden" name="seccion" value="@seccionNormalizada" />
+    }
+    @if (extras is not null)
+    {
+      foreach (var kv in extras)
+      {
+        if (!string.IsNullOrWhiteSpace(kv.Value))
+        {
+          <input type="hidden" name="@kv.Key" value="@kv.Value" />
+        }
+      }
     }
     <div class="sk-search-box">
       <i class="bi bi-search" aria-hidden="true"></i>

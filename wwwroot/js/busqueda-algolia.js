@@ -352,7 +352,15 @@
           '&q=' + encodeURIComponent(query) +
           (ciudadVal ? '&ciudad=' + encodeURIComponent(ciudadVal) : '');
       } else {
-        allUrl = feedUrl + '?q=' + encodeURIComponent(query);
+        var feedParams = new URLSearchParams();
+        feedParams.set('q', query);
+        var feedCiudad = form ? form.querySelector('select[name=ciudad]') : null;
+        if (feedCiudad && feedCiudad.value) feedParams.set('ciudad', feedCiudad.value);
+        ['tipo', 'modalidad', 'categoria', 'estrellas', 'opCalif'].forEach(function (name) {
+          var hidden = form ? form.querySelector('input[name="' + name + '"]') : null;
+          if (hidden && hidden.value) feedParams.set(name, hidden.value);
+        });
+        allUrl = feedUrl + '?' + feedParams.toString();
       }
       var count = typeof total === 'number' && total > 0 ? total : visible.length;
       var all = document.createElement('a');
