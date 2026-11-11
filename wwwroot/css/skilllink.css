@@ -23,6 +23,7 @@
   --sk-cash: #22a06b;
   --sk-header-z: 11000;
   --sk-header-h: 0px;
+  --sk-header-bg: linear-gradient(180deg, #e4d6fa, var(--sk-lilac));
 }
 .sk-serif { font-family: Georgia, 'Times New Roman', Times, serif; }
 
@@ -235,9 +236,24 @@ body {
   background-attachment: fixed;
 }
 
+/* Cubre la franja que queda a la derecha del header cuando el offcanvas del chat
+   oculta el scrollbar y Bootstrap reduce el ancho del body. */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--sk-header-h, 0px);
+  background: var(--sk-header-bg);
+  border-bottom: 1px solid rgba(124,77,255,.25);
+  z-index: calc(var(--sk-header-z, 11000) - 1);
+  pointer-events: none;
+}
+
 /* --- Nav fija con gradiente y píldoras cristal --- */
 .navbar-skilllink { position: sticky; top: 0; z-index: var(--sk-header-z, 11000);
-  background: linear-gradient(180deg, #e4d6fa, var(--sk-lilac));
+  background: var(--sk-header-bg);
   border-bottom: 1px solid rgba(124,77,255,.25);
   box-shadow: 0 8px 20px -12px rgba(124,77,255,.6); }
 .sk-navpill { background: linear-gradient(180deg, #fff, #f6f0ff);
@@ -451,6 +467,7 @@ input.btn-check:checked + .sk-star-btn { font-weight: 700; color: #3d2e00;
   color: #fff;
   font-weight: 700;
   white-space: nowrap;
+  text-decoration: none;
   box-shadow: 0 12px 22px -14px rgba(124,77,255,.8), inset 0 1px 0 rgba(255,255,255,.35);
   transition: background .18s, transform .18s, box-shadow .18s;
 }
