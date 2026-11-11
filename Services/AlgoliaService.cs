@@ -16,9 +16,12 @@ public sealed class AlgoliaService
 
     private readonly SearchClient? _client;
     private readonly string _indexName;
+    private readonly string _perfilesIndexName;
     private readonly ILogger<AlgoliaService> _logger;
     private readonly SemaphoreSlim _settingsLock = new(1, 1);
+    private readonly SemaphoreSlim _perfilesSettingsLock = new(1, 1);
     private bool _settingsApplied;
+    private bool _perfilesSettingsApplied;
 
     public bool IsConfigured => _client is not null;
 
@@ -26,6 +29,7 @@ public sealed class AlgoliaService
     {
         _logger = logger;
         _indexName = configuration["Algolia:IndexName"] ?? "skilllink_index";
+        _perfilesIndexName = configuration["Algolia:PerfilesIndexName"] ?? $"{_indexName}_perfiles";
         var appId = configuration["Algolia:ApplicationId"];
         // Clave privilegiada solo para servidor. "Algolia:ApiKey" se mantiene
         // como alias temporal para despliegues que todavía no migraron.
@@ -102,6 +106,53 @@ public sealed class AlgoliaService
         finally
         {
             _settingsLock.Release();
+        }
+    }
+
+    /// <summary>Ajustes del índice de perfiles (personas y empresas).</summary>
+    public async Task EnsurePerfilesSettingsAsync()
+    {
+        if (_client is null || _perfilesSettingsApplied) return;
+
+        await _perfilesSettingsLock.WaitAsync();
+        try
+        {
+            if (_perfilesSettingsApplied) return;
+
+            var settings = new IndexSettings
+            {
+                SearchableAttributes = new List<string>
+                {
+                    "nombre",
+                    "unordered(detalle)",
+                    "unordered(habilidades)",
+                    "unordered(descripcion)",
+                    "unordered(ciudad)"
+                },
+                AttributesForFaceting = new List<string>
+                {
+                    "filterOnly(estado)",
+                    "filterOnly(tipoRegistro)"
+                },
+                AttributesToRetrieve = new List<string>
+                {
+                    "objectID", "usuarioId", "tipoRegistro", "nombre", "detalle",
+                    "descripcion", "habilidades", "ciudad", "disponibilidad",
+                    "estado", "imagenUrl", "url"
+                }
+            };
+
+            await _client.SetSettingsAsync(_perfilesIndexName, settings);
+            _perfilesSettingsApplied = true;
+            _logger.LogInformation("Algolia: ajustes aplicados al índice de perfiles {Index}.", _perfilesIndexName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Algolia: no se pudieron aplicar los ajustes del índice de perfiles {Index}.", _perfilesIndexName);
+        }
+        finally
+        {
+            _perfilesSettingsLock.Release();
         }
     }
 
@@ -243,9 +294,180 @@ public sealed class AlgoliaService
         }
     }
 
+    /// <summary>Indexa/actualiza el perfil de un trabajador.</summary>
+    public async Task IndexPerfilAsync(SkillLink_dotnet.Models.Perfil p, string estadoCuenta)
+    {
+        if (_client is null) return;
+        await EnsurePerfilesSettingsAsync();
+        var record = new Dictionary<string, object?>
+        {
+            ["objectID"] = $"perfil-{p.UsuarioId}",
+            ["usuarioId"] = p.UsuarioId,
+            ["tipoRegistro"] = "persona",
+            ["nombre"] = p.NombreCompleto,
+            ["detalle"] = p.Especialidad,
+            ["descripcion"] = p.Descripcion,
+            ["habilidades"] = p.Habilidades,
+            ["ciudad"] = p.Ciudad,
+            ["disponibilidad"] = p.Disponibilidad,
+            ["estado"] = estadoCuenta,
+            ["imagenUrl"] = ImagenUrl(p.Foto),
+            ["url"] = $"/trabajador/perfil/{p.UsuarioId}"
+        };
+        await SavePerfilRecordAsync(record, p.UsuarioId);
+    }
+
+    /// <summary>Indexa/actualiza el perfil de una empresa.</summary>
+    public async Task IndexEmpresaAsync(SkillLink_dotnet.Models.Empresa e, string estadoCuenta)
+    {
+        if (_client is null) return;
+        await EnsurePerfilesSettingsAsync();
+        var record = new Dictionary<string, object?>
+        {
+            ["objectID"] = $"empresa-{e.UsuarioId}",
+            ["usuarioId"] = e.UsuarioId,
+            ["tipoRegistro"] = "empresa",
+            ["nombre"] = e.RazonSocial,
+            ["detalle"] = e.Sector,
+            ["descripcion"] = e.Descripcion,
+            ["habilidades"] = null,
+            ["ciudad"] = e.Ciudad,
+            ["disponibilidad"] = null,
+            ["estado"] = estadoCuenta,
+            ["imagenUrl"] = ImagenUrl(e.Logo),
+            ["url"] = $"/empresa/perfil/{e.UsuarioId}"
+        };
+        await SavePerfilRecordAsync(record, e.UsuarioId);
+    }
+
+    /// <summary>Sincroniza el perfil indexado según el rol y estado actual del usuario.</summary>
+    public async Task SyncPerfilUsuarioAsync(SkillLink_dotnet.Models.ApplicationUser u)
+    {
+        if (_client is null) return;
+        switch (u.Rol)
+        {
+            case SkillLink_dotnet.Models.Roles.Trabajador when u.Perfil is not null:
+                await IndexPerfilAsync(u.Perfil, u.EstadoCuenta);
+                break;
+            case SkillLink_dotnet.Models.Roles.Empresa when u.Empresa is not null:
+                await IndexEmpresaAsync(u.Empresa, u.EstadoCuenta);
+                break;
+            default:
+                await DeletePerfilUsuarioAsync(u.Id);
+                break;
+        }
+    }
+
+    /// <summary>Elimina del índice de perfiles los registros de un usuario.</summary>
+    public async Task DeletePerfilUsuarioAsync(string usuarioId)
+    {
+        if (_client is null) return;
+        try
+        {
+            await _client.DeleteObjectAsync(_perfilesIndexName, $"perfil-{usuarioId}");
+            await _client.DeleteObjectAsync(_perfilesIndexName, $"empresa-{usuarioId}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Algolia: no se pudo eliminar el perfil del usuario {UsuarioId}.", usuarioId);
+        }
+    }
+
+    /// <summary>Busca perfiles aprobados en Algolia y devuelve sus UsuarioId en orden de relevancia.
+    /// Null si Algolia no está configurado o la búsqueda falló.</summary>
+    public async Task<List<string>?> SearchPerfilUsuarioIdsAsync(string query, string tipo, int limit = 50)
+    {
+        if (_client is null || string.IsNullOrWhiteSpace(query)) return null;
+        await EnsurePerfilesSettingsAsync();
+        try
+        {
+            var tipoRegistro = tipo == "empresa" ? "empresa" : "persona";
+            var resp = await _client.SearchSingleIndexAsync<AlgoliaHit>(
+                _perfilesIndexName,
+                new SearchParams(new SearchParamsObject
+                {
+                    Query = query,
+                    HitsPerPage = limit,
+                    Filters = $"estado:aprobado AND tipoRegistro:{tipoRegistro}"
+                }));
+            var ids = new List<string>();
+            foreach (var h in resp.Hits ?? Enumerable.Empty<AlgoliaHit>())
+                if (!string.IsNullOrWhiteSpace(h.UsuarioId))
+                    ids.Add(h.UsuarioId);
+            return ids;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Algolia: búsqueda de perfiles falló.");
+            return null;
+        }
+    }
+
+    /// <summary>Vacía el índice de perfiles y reindexa los usuarios recibidos.</summary>
+    public async Task<int> ReindexPerfilesAsync(IEnumerable<SkillLink_dotnet.Models.ApplicationUser> usuarios)
+    {
+        if (_client is null) return 0;
+        await EnsurePerfilesSettingsAsync();
+        if (!await ClearPerfilesIndexAsync()) return 0;
+        var total = 0;
+        foreach (var u in usuarios)
+        {
+            if (u.Rol == SkillLink_dotnet.Models.Roles.Trabajador && u.Perfil is not null)
+            {
+                await IndexPerfilAsync(u.Perfil, u.EstadoCuenta);
+                total++;
+            }
+            else if (u.Rol == SkillLink_dotnet.Models.Roles.Empresa && u.Empresa is not null)
+            {
+                await IndexEmpresaAsync(u.Empresa, u.EstadoCuenta);
+                total++;
+            }
+        }
+        return total;
+    }
+
+    private async Task<bool> ClearPerfilesIndexAsync()
+    {
+        if (_client is null) return false;
+        try
+        {
+            var response = await _client.ClearObjectsAsync(_perfilesIndexName);
+            if (response is { TaskID: > 0 })
+                await _client.WaitForTaskAsync(_perfilesIndexName, response.TaskID);
+            _logger.LogInformation("Algolia: índice de perfiles {Index} vaciado.", _perfilesIndexName);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Algolia: no se pudo vaciar el índice de perfiles {Index}.", _perfilesIndexName);
+            return false;
+        }
+    }
+
+    private async Task SavePerfilRecordAsync(Dictionary<string, object?> record, string usuarioId)
+    {
+        try
+        {
+            await _client!.SaveObjectAsync(_perfilesIndexName, record);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Algolia: no se pudo indexar el perfil del usuario {UsuarioId}.", usuarioId);
+        }
+    }
+
+    private static string ImagenUrl(string? relativa)
+    {
+        if (string.IsNullOrWhiteSpace(relativa)) return ImageUploadService.PlaceholderUrl;
+        return $"/uploads/{relativa.TrimStart('/')}";
+    }
+
     private sealed class AlgoliaHit
     {
         [System.Text.Json.Serialization.JsonPropertyName("objectID")]
         public string? ObjectID { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("usuarioId")]
+        public string? UsuarioId { get; set; }
     }
 }

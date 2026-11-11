@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SkillLink_dotnet.Data;
 using SkillLink_dotnet.Models;
 using SkillLink_dotnet.Services;
+using SkillLink_dotnet.Services.Chatbot;
 using SkillLink_dotnet.Services.Ml;
 using System.Security.Claims;
 
@@ -57,9 +58,30 @@ builder.Services.AddScoped<ImageUploadService>();
 // Hasher que acepta los bcrypt del sistema Flask original y los migra a PBKDF2 al hacer login.
 builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, LegacyPasswordHasher>();
 builder.Services.AddControllersWithViews();
+builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 builder.Services.AddSingleton<SkillLink.Services.AlgoliaService>();
 builder.Services.AddSingleton<SpamClasificadorService>();
 builder.Services.AddScoped<ModeracionService>();
+
+builder.Services.Configure<ChatbotOptions>(
+    builder.Configuration.GetSection(ChatbotOptions.SectionName));
+builder.Services.AddSingleton<RedisConnectionProvider>();
+builder.Services.AddSingleton<ChatSessionStore>();
+builder.Services.AddSingleton<ChatRateLimiter>();
+builder.Services.AddSingleton<InputGuard>();
+builder.Services.AddSingleton<ChatbotFaqService>();
+builder.Services.AddScoped<ChatCardFactory>();
+builder.Services.AddScoped<ChatToolRegistry>();
+builder.Services.AddScoped<IChatTool, BuscarPublicacionesTool>();
+builder.Services.AddScoped<IChatTool, BuscarTecnicosTool>();
+builder.Services.AddScoped<IChatTool, ObtenerPublicacionTool>();
+builder.Services.AddScoped<IChatTool, CompararPublicacionesTool>();
+builder.Services.AddScoped<IChatTool, EstadoSolicitudesTool>();
+builder.Services.AddScoped<IChatTool, EstadoNotificacionesTool>();
+builder.Services.AddScoped<IChatTool, FaqPlataformaTool>();
+builder.Services.AddHttpClient<IGeminiChatClient, GeminiChatClient>(
+    client => client.Timeout = Timeout.InfiniteTimeSpan);
+builder.Services.AddScoped<ChatbotOrchestrator>();
 
 var app = builder.Build();
 
@@ -135,6 +157,12 @@ if (args.Contains("--seed-150"))
                     .ToListAsync();
                 var total = await seedAlgolia.ReindexActivasAsync(activas);
                 Console.WriteLine($"Algolia: {total} publicaciones activas reindexadas.");
+                var usuariosSeed = await seedDb.Users
+                    .Include(u => u.Perfil).Include(u => u.Empresa)
+                    .Where(u => u.Rol != Roles.Admin)
+                    .ToListAsync();
+                var totalPerfiles = await seedAlgolia.ReindexPerfilesAsync(usuariosSeed);
+                Console.WriteLine($"Algolia: {totalPerfiles} perfiles reindexados.");
             }
             else
             {
@@ -284,6 +312,12 @@ if (args.Contains("--reindex"))
             .Where(p => p.Activa));
     var total = await algoliaSvc.ReindexActivasAsync(todas);
     app.Logger.LogInformation("Reindexadas {Total} publicaciones activas en Algolia.", total);
+    var usuarios = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+        .ToListAsync(dbr.Users
+            .Include(u => u.Perfil).Include(u => u.Empresa)
+            .Where(u => u.Rol != Roles.Admin));
+    var totalPerfiles = await algoliaSvc.ReindexPerfilesAsync(usuarios);
+    app.Logger.LogInformation("Reindexados {Total} perfiles aprobados en Algolia.", totalPerfiles);
     return;
 }
 // Datos demo (desarrollo): `dotnet run -- --seed-demo` crea 2 usuarios demo
@@ -549,6 +583,12 @@ if (args.Contains("--seed-demo"))
     var totalIndexadas = await algoliaSeed.ReindexActivasAsync(activas);
     app.Logger.LogInformation("Seed-demo listo: {Nuevas} nuevas. Indexadas {Total} publicaciones activas en Algolia.",
         nuevas, totalIndexadas);
+    var usuariosDemo = await dbs.Users
+        .Include(u => u.Perfil).Include(u => u.Empresa)
+        .Where(u => u.Rol != Roles.Admin)
+        .ToListAsync();
+    var totalPerfilesDemo = await algoliaSeed.ReindexPerfilesAsync(usuariosDemo);
+    app.Logger.LogInformation("Seed-demo: {Total} perfiles indexados en Algolia.", totalPerfilesDemo);
     return;
 }
 app.Run();

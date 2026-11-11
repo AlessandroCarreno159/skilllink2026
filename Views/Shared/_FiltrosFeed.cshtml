@@ -1,0 +1,66 @@
+@* Panel de filtros del feed laboral con el estilo del Feed de Perfiles *@
+@using SkillLink_dotnet.Services
+@{
+  string? q = ViewBag.Q, ciudad = ViewBag.Ciudad, tipo = ViewBag.Tipo;
+  string? modalidad = ViewBag.Modalidad, categoria = ViewBag.Categoria;
+  int? estrellas = ViewBag.Estrellas as int?;
+  string opCalif = (ViewBag.OpCalif as string) ?? ">=";
+}
+<div class="sk-filter-panel mb-4">
+  <div class="sk-filter-panel-head">
+    <h5><i class="bi bi-sliders"></i> Filtros</h5>
+    <a class="sk-filter-clear" asp-controller="Feed" asp-action="Index"><i class="bi bi-x-circle"></i> Limpiar</a>
+  </div>
+  <form method="get" class="sk-filter-form">
+    <input type="hidden" name="q" value="@q" />
+    <input type="hidden" name="ciudad" value="@ciudad" />
+    @if (!string.IsNullOrWhiteSpace(tipo)) { <input type="hidden" name="tipo" value="@tipo" /> }
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="sk-filter-label" for="ffCategoria"><i class="bi bi-grid-fill"></i> Categoría</label>
+        <select id="ffCategoria" name="categoria" class="form-select sk-filter-control">
+          <option value="">Todas las categorías</option>
+          @foreach (var kv in Catalogos.Categorias)
+          {
+            <option value="@kv.Key" selected="@(categoria == kv.Key)">@kv.Value</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="sk-filter-label" for="ffModalidad"><i class="bi bi-clock-fill"></i> Tipo de trabajo</label>
+        <select id="ffModalidad" name="modalidad" class="form-select sk-filter-control">
+          <option value="">Todas las modalidades</option>
+          @foreach (var kv in Catalogos.Modalidades)
+          {
+            <option value="@kv.Key" selected="@(modalidad == kv.Key)">@kv.Value</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="sk-filter-label"><i class="bi bi-star-fill"></i> Calificación</label>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <div class="btn-group btn-group-sm" role="group" aria-label="Estrellas">
+            @for (var s = 1; s <= 5; s++)
+            {
+              <input type="radio" class="btn-check" name="estrellas" id="ff-star-@s" value="@s" checked="@(estrellas == s)" />
+              <label class="btn btn-sm sk-star-btn" for="ff-star-@s">@s ★</label>
+            }
+          </div>
+          <select name="opCalif" class="form-select form-select-sm sk-filter-control sk-filter-op" aria-label="Operador de calificación">
+            <option value=">=" selected="@(opCalif == ">=")">≥</option>
+            <option value="=" selected="@(opCalif == "=")">=</option>
+            <option value="<=" selected="@(opCalif == "<=")">≤</option>
+          </select>
+        </div>
+        @if (estrellas.HasValue)
+        {
+          <button type="button" class="sk-filter-clear mt-1" onclick="document.querySelectorAll('#ff-star-1,#ff-star-2,#ff-star-3,#ff-star-4,#ff-star-5').forEach(r=>r.checked=false)">Quitar estrellas</button>
+        }
+      </div>
+    </div>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+      <a class="btn btn-sm sk-btn-lila px-3" asp-controller="Feed" asp-action="Create"><i class="bi bi-plus-circle-fill"></i> Nueva publicación</a>
+      <button type="submit" class="sk-search-submit"><i class="bi bi-funnel-fill"></i> Aplicar filtros</button>
+    </div>
+  </form>
+</div>

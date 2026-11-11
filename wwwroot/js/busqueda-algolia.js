@@ -27,6 +27,42 @@
     var input = root.querySelector('#inputBusqueda') || root.querySelector('#sk-search-input');
     var clearBtn = root.querySelector('[data-sk-search-clear]') || root.querySelector('.sk-search-clear');
     var form = root.querySelector('form');
+    var filterForm = document.querySelector('.sk-filter-form');
+
+    function setHidden(formEl, name, value) {
+      var field = formEl.querySelector('input[type="hidden"][name="' + name + '"]');
+      if (!field) {
+        field = document.createElement('input');
+        field.type = 'hidden';
+        field.name = name;
+        formEl.appendChild(field);
+      }
+      field.value = value == null ? '' : value;
+    }
+
+    function syncFiltersToSearch() {
+      if (!filterForm) return;
+      ['modalidad', 'categoria', 'estrellas', 'opCalif'].forEach(function (name) {
+        var select = filterForm.querySelector('select[name="' + name + '"]');
+        var checked = filterForm.querySelector('[name="' + name + '"]:checked');
+        var value = select ? select.value : (checked ? checked.value : '');
+        setHidden(form, name, value);
+      });
+    }
+
+    function syncCityToFilter() {
+      if (!filterForm) return;
+      var city = form.querySelector('select[name="ciudad"]');
+      setHidden(filterForm, 'ciudad', city ? city.value : '');
+      setHidden(filterForm, 'q', input.value);
+    }
+
+    if (filterForm) {
+      form.addEventListener('submit', syncFiltersToSearch);
+      filterForm.addEventListener('submit', syncCityToFilter);
+      filterForm.addEventListener('change', syncFiltersToSearch);
+      filterForm.addEventListener('input', syncFiltersToSearch);
+    }
 
     function resolvePanel() {
       var el = document.getElementById('search-results-container');
@@ -79,6 +115,11 @@
     var indexName = (root.getAttribute('data-index-name') || 'skilllink_index').trim();
     var detailsBase = root.getAttribute('data-details-base') || '/Feed/Details';
     var feedUrl = root.getAttribute('data-feed-url') || '/Feed';
+    var perfilesUrl = root.getAttribute('data-perfiles-url') || '/PerfilesFeed';
+    var modo = (root.getAttribute('data-search-mode') || 'publicaciones').trim();
+    var isProfiles = modo === 'perfiles';
+    var seccion = (root.getAttribute('data-search-seccion') || 'personas').trim();
+    var profileTipo = (root.getAttribute('data-profile-tipo') || (seccion === 'empresas' ? 'empresa' : 'persona')).trim();
     var algoliaLib = window.algoliasearch;
     var libOk = typeof algoliaLib === 'function';
 
@@ -86,6 +127,8 @@
       applicationId: appId || '(vacío)',
       searchApiKeyPresente: !!searchKey,
       indexName: indexName,
+      modo: modo,
+      profileTipo: isProfiles ? profileTipo : undefined,
       cdnAlgoliaCargado: libOk,
       cdnGlobal: typeof algoliaLib
     });
@@ -248,10 +291,19 @@
       link.setAttribute('role', 'option');
       link.setAttribute('aria-selected', 'false');
       link.tabIndex = -1;
-      link.href = detailsBase + '/' + encodeURIComponent(objectId);
+
+      if (isProfiles) {
+        var usuarioId = hit.usuarioId == null ? '' : String(hit.usuarioId);
+        var basePerfil = (hit.tipoRegistro === 'empresa' || profileTipo === 'empresa')
+          ? '/empresa/perfil/'
+          : '/trabajador/perfil/';
+        link.href = hit.url || (basePerfil + encodeURIComponent(usuarioId));
+      } else {
+        link.href = detailsBase + '/' + encodeURIComponent(objectId);
+      }
 
       var img = document.createElement('img');
-      img.className = 'sk-search-thumb';
+      img.className = 'sk-search-thumb' + (isProfiles ? ' sk-search-avatar' : '');
       img.src = hit.imagenUrl || '/img/placeholder.svg';
       img.alt = '';
       img.loading = 'lazy';
@@ -262,10 +314,14 @@
 
       var title = document.createElement('span');
       title.className = 'sk-search-result-title';
-      title.textContent = hit.titulo || '(Publicación sin título)';
+      title.textContent = isProfiles
+        ? (hit.nombre || '(Perfil sin nombre)')
+        : (hit.titulo || '(Publicación sin título)');
       body.appendChild(title);
 
-      var snippetText = truncate(hit.contenido, 130);
+      var snippetText = isProfiles
+        ? (truncate(hit.detalle, 90) || truncate(hit.descripcion, 130))
+        : truncate(hit.contenido, 130);
       if (snippetText) {
         var snippet = document.createElement('span');
         snippet.className = 'sk-search-result-snippet';
@@ -274,17 +330,24 @@
       }
 
       var chips = [];
-      if (hit.categoria || hit.categoriaLabel) {
-        chips.push(createChip(hit.categoriaLabel || label(categorias, hit.categoria, 'General')));
-      }
-      if (hit.modalidad || hit.modalidadLabel) {
-        chips.push(createChip(hit.modalidadLabel || label(modalidades, hit.modalidad, hit.modalidad)));
-      }
-      if (hit.tipo || hit.tipoLabel) {
-        chips.push(createChip(hit.tipoLabel || label(tipos, hit.tipo, hit.tipo)));
-      }
-      if (hit.ciudad) {
-        chips.push(createChip(hit.ciudad, 'bi bi-geo-alt-fill'));
+      if (isProfiles) {
+        if (hit.ciudad) chips.push(createChip(hit.ciudad, 'bi bi-geo-alt-fill'));
+        if (hit.disponibilidad) chips.push(createChip(hit.disponibilidad));
+        chips.push(createChip(hit.tipoRegistro === 'empresa' ? 'Empresa' : 'Persona',
+          hit.tipoRegistro === 'empresa' ? 'bi bi-building-fill' : 'bi bi-person-fill'));
+      } else {
+        if (hit.categoria || hit.categoriaLabel) {
+          chips.push(createChip(hit.categoriaLabel || label(categorias, hit.categoria, 'General')));
+        }
+        if (hit.modalidad || hit.modalidadLabel) {
+          chips.push(createChip(hit.modalidadLabel || label(modalidades, hit.modalidad, hit.modalidad)));
+        }
+        if (hit.tipo || hit.tipoLabel) {
+          chips.push(createChip(hit.tipoLabel || label(tipos, hit.tipo, hit.tipo)));
+        }
+        if (hit.ciudad) {
+          chips.push(createChip(hit.ciudad, 'bi bi-geo-alt-fill'));
+        }
       }
 
       if (chips.length) {
@@ -304,7 +367,9 @@
 
       if (!visible.length) {
         appendMessage('sk-search-empty', 'bi bi-search', 'No se encontraron resultados',
-          'No hay publicaciones que coincidan con “' + query + '”.');
+          isProfiles
+            ? 'No hay ' + (profileTipo === 'empresa' ? 'empresas' : 'personas') + ' que coincidan con “' + query + '”.'
+            : 'No hay publicaciones que coincidan con “' + query + '”.');
         return;
       }
 
@@ -315,7 +380,24 @@
         if (node) fragment.appendChild(node);
       });
 
-      var allUrl = feedUrl + '?q=' + encodeURIComponent(query);
+      var allUrl;
+      if (isProfiles) {
+        var ciudadSelect = form ? form.querySelector('select[name=ciudad]') : null;
+        var ciudadVal = ciudadSelect ? ciudadSelect.value : '';
+        allUrl = perfilesUrl + '?seccion=' + encodeURIComponent(seccion) +
+          '&q=' + encodeURIComponent(query) +
+          (ciudadVal ? '&ciudad=' + encodeURIComponent(ciudadVal) : '');
+      } else {
+        var feedParams = new URLSearchParams();
+        feedParams.set('q', query);
+        var feedCiudad = form ? form.querySelector('select[name=ciudad]') : null;
+        if (feedCiudad && feedCiudad.value) feedParams.set('ciudad', feedCiudad.value);
+        ['tipo', 'modalidad', 'categoria', 'estrellas', 'opCalif'].forEach(function (name) {
+          var hidden = form ? form.querySelector('input[name="' + name + '"]') : null;
+          if (hidden && hidden.value) feedParams.set(name, hidden.value);
+        });
+        allUrl = feedUrl + '?' + feedParams.toString();
+      }
       var count = typeof total === 'number' && total > 0 ? total : visible.length;
       var all = document.createElement('a');
       all.className = 'sk-search-all';
@@ -343,14 +425,20 @@
 
       showLoading();
 
+      var filtro = isProfiles
+        ? 'estado:aprobado AND tipoRegistro:' + profileTipo
+        : 'activa:true';
+      var atributos = isProfiles
+        ? ['objectID', 'usuarioId', 'tipoRegistro', 'nombre', 'detalle', 'descripcion',
+           'habilidades', 'ciudad', 'disponibilidad', 'estado', 'imagenUrl', 'url']
+        : ['objectID', 'titulo', 'contenido', 'habilidades',
+           'categoria', 'categoriaLabel', 'modalidad', 'modalidadLabel',
+           'tipo', 'tipoLabel', 'precio', 'imagenUrl', 'ciudad', 'autor', 'fecha', 'activa'];
+
       index.search(query, {
         hitsPerPage: 6,
-        filters: 'activa:true',
-        attributesToRetrieve: [
-          'objectID', 'titulo', 'contenido', 'habilidades',
-          'categoria', 'categoriaLabel', 'modalidad', 'modalidadLabel',
-          'tipo', 'tipoLabel', 'precio', 'imagenUrl', 'ciudad', 'autor', 'fecha', 'activa'
-        ]
+        filters: filtro,
+        attributesToRetrieve: atributos
       }).then(function (response) {
         log('Respuesta de Algolia recibida:', {
           request: current,

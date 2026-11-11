@@ -32,7 +32,7 @@ public sealed class RealtimePublisher : IDisposable
     public async Task PublishAsync(string type, string userId, object payload, string? room = null)
     {
         var multiplexer = GetMultiplexer();
-        if (multiplexer is null) return;
+        if (multiplexer is null || !multiplexer.IsConnected) return;
 
         try
         {
@@ -55,11 +55,17 @@ public sealed class RealtimePublisher : IDisposable
 
     private IConnectionMultiplexer? GetMultiplexer()
     {
-        if (_multiplexer is not null) return _multiplexer;
-
         lock (_sync)
         {
-            if (_multiplexer is not null) return _multiplexer;
+            if (_multiplexer is not null)
+            {
+                if (_multiplexer.IsConnected) return _multiplexer;
+                if (DateTime.UtcNow < _nextRetryUtc) return null;
+                _nextRetryUtc = DateTime.UtcNow.AddSeconds(15);
+                try { _multiplexer.Dispose(); } catch { /* se reintenta luego */ }
+                _multiplexer = null;
+            }
+
             if (DateTime.UtcNow < _nextRetryUtc) return null;
 
             var url = ResolveRedisUrl();
@@ -69,10 +75,31 @@ public sealed class RealtimePublisher : IDisposable
             {
                 var options = BuildOptions(url);
                 options.AbortOnConnectFail = false;
-                options.ConnectRetry = 3;
-                options.ConnectTimeout = 5000;
+                options.ConnectRetry = 1;
+                options.ConnectTimeout = 1500;
+                options.AsyncTimeout = 1500;
+                options.SyncTimeout = 1500;
 
-                _multiplexer = ConnectionMultiplexer.Connect(options);
+                var multiplexer = ConnectionMultiplexer.Connect(options);
+                try
+                {
+                    multiplexer.GetDatabase().Ping();
+                }
+                catch
+                {
+                    try { multiplexer.Dispose(); } catch { /* nada */ }
+                    throw;
+                }
+
+                if (!multiplexer.IsConnected)
+                {
+                    _nextRetryUtc = DateTime.UtcNow.AddSeconds(15);
+                    try { multiplexer.Dispose(); } catch { /* nada */ }
+                    _logger.LogWarning("Redis no está disponible para eventos en tiempo real ({Url}).", url);
+                    return null;
+                }
+
+                _multiplexer = multiplexer;
                 _logger.LogInformation("Redis conectado para eventos en tiempo real.");
                 return _multiplexer;
             }

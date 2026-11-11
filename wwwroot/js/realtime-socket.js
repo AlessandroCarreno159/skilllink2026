@@ -27,8 +27,6 @@
   function $(id) { return document.getElementById(id); }
 
   function initEls() {
-    el.toggle = $('sk-chat-toggle');
-    el.badge = $('sk-chat-badge');
     el.panel = $('skChatPanel');
     el.title = $('sk-chat-title');
     el.empty = $('sk-chat-empty');
@@ -250,13 +248,6 @@
       });
     }
 
-    if (el.toggle) {
-      el.toggle.addEventListener('click', function () {
-        if (!state.peer) toast('Mensajes', 'Abre un chat desde una postulación o publicación.');
-        showPanel();
-      });
-    }
-
     if (el.form) {
       el.form.addEventListener('submit', function (event) {
         event.preventDefault();
@@ -358,6 +349,10 @@
 
         window.addEventListener('beforeunload', function () { socket.disconnect(); });
         window.SkillLinkChat = { open: openChat };
+        window.SkillLinkRealtime = { socket: socket, me: data };
+        window.dispatchEvent(new CustomEvent('sk:realtime:ready', {
+          detail: { socket: socket, me: data }
+        }));
       })
       .catch(function (error) {
         console.warn('[realtime] Error obteniendo el token:', error);

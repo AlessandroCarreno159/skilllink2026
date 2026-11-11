@@ -1,0 +1,142 @@
+@* Feed de perfiles: directorio público de personas y empresas aprobadas *@
+@model SkillLink_dotnet.ViewModels.PerfilesFeedVm
+@inject ImageUploadService Uploads
+@{
+  ViewData["Title"] = "Feed de perfiles";
+  var esEmpresas = Model.Seccion == "empresas";
+  var hayFiltros = !string.IsNullOrWhiteSpace(Model.Q) || !string.IsNullOrWhiteSpace(Model.Ciudad);
+
+  ViewBag.Q = Model.Q;
+  ViewData["SearchModo"] = "perfiles";
+  ViewData["SearchSeccion"] = Model.Seccion;
+  ViewData["SearchConCiudad"] = true;
+  ViewData["SearchCiudad"] = Model.Ciudad;
+}
+@functions {
+  static string? Resumen(string? texto, int max)
+  {
+    if (string.IsNullOrWhiteSpace(texto)) return null;
+    var t = texto.Trim();
+    return t.Length <= max ? t : t[..max].TrimEnd() + "…";
+  }
+}
+<h2 class="sk-section-title mb-3"><i class="bi bi-people-fill sk-ic-brand"></i> Feed de perfiles</h2>
+
+<ul class="nav nav-pills sk-perfiles-tabs mb-3">
+  <li class="nav-item">
+    <a class="nav-link sk-perfiles-tab @(!esEmpresas ? "active" : "")" asp-action="Index" asp-route-seccion="personas" asp-route-q="@Model.Q" asp-route-ciudad="@Model.Ciudad">
+      <span class="sk-perfiles-tab-icon"><i class="bi bi-person-badge-fill"></i></span>
+      <span class="sk-perfiles-tab-text">
+        <strong>Personas</strong>
+        <small>@Model.TotalPersonas @(Model.TotalPersonas == 1 ? "perfil" : "perfiles")</small>
+      </span>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link sk-perfiles-tab @(esEmpresas ? "active" : "")" asp-action="Index" asp-route-seccion="empresas" asp-route-q="@Model.Q" asp-route-ciudad="@Model.Ciudad">
+      <span class="sk-perfiles-tab-icon"><i class="bi bi-building-fill"></i></span>
+      <span class="sk-perfiles-tab-text">
+        <strong>Empresas</strong>
+        <small>@Model.TotalEmpresas @(Model.TotalEmpresas == 1 ? "empresa" : "empresas")</small>
+      </span>
+    </a>
+  </li>
+</ul>
+
+<div class="mb-4 sk-search-feed">
+  <partial name="_BuscadorAlgolia" />
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.SearchError))
+{
+  <div class="alert alert-warning sk-toast sk-toast-warn" role="alert"><i class="bi bi-exclamation-triangle-fill"></i> @Model.SearchError</div>
+}
+
+<p class="text-muted small mb-3">
+  @(esEmpresas ? "Empresas" : "Personas") encontradas: <strong>@Model.Total</strong>
+</p>
+
+<div class="row g-3">
+  @if (esEmpresas)
+  {
+    foreach (var e in Model.Empresas)
+    {
+      <div class="col-md-6 col-lg-4">
+        <div class="card sk-pub-card h-100">
+          <div class="card-body d-flex flex-column text-center">
+            <img src="@Uploads.Url(e.Logo)" alt="Logo de la empresa" class="rounded mx-auto mb-3" style="width:96px;height:96px;object-fit:cover" loading="lazy" />
+            <h5 class="mb-1">@e.RazonSocial</h5>
+            <p class="sk-meta mb-1"><i class="bi bi-briefcase-fill sk-ic-brand"></i> @(string.IsNullOrWhiteSpace(e.Sector) ? "Empresa" : e.Sector)</p>
+            <p class="sk-meta mb-2"><i class="bi bi-geo-alt-fill sk-ic-pin"></i> @(string.IsNullOrWhiteSpace(e.Ciudad) ? "—" : e.Ciudad)</p>
+            @if (Resumen(e.Descripcion, 120) is string descEmpresa)
+            {
+              <p class="small text-muted">@descEmpresa</p>
+            }
+            <a href="/empresa/perfil/@e.UsuarioId" class="btn sk-btn-lila btn-sm mt-auto"><i class="bi bi-eye-fill"></i> Ver perfil</a>
+          </div>
+        </div>
+      </div>
+    }
+  }
+  else
+  {
+    foreach (var p in Model.Personas)
+    {
+      <div class="col-md-6 col-lg-4">
+        <div class="card sk-pub-card h-100">
+          <div class="card-body d-flex flex-column text-center">
+            <img src="@Uploads.Url(p.Foto)" alt="Foto de perfil" class="rounded-circle mx-auto mb-3" style="width:96px;height:96px;object-fit:cover" loading="lazy" />
+            <h5 class="mb-1">@p.NombreCompleto</h5>
+            <p class="sk-meta mb-1"><i class="bi bi-tools sk-ic-brand"></i> @(string.IsNullOrWhiteSpace(p.Especialidad) ? "Trabajador" : p.Especialidad)</p>
+            <p class="sk-meta mb-2"><i class="bi bi-geo-alt-fill sk-ic-pin"></i> @(string.IsNullOrWhiteSpace(p.Ciudad) ? "—" : p.Ciudad)</p>
+            <p class="mb-2"><span class="badge bg-secondary">@p.Disponibilidad</span></p>
+            @if (Resumen(p.Descripcion, 120) is string descPersona)
+            {
+              <p class="small text-muted">@descPersona</p>
+            }
+            <a href="/trabajador/perfil/@p.UsuarioId" class="btn sk-btn-lila btn-sm mt-auto"><i class="bi bi-eye-fill"></i> Ver perfil</a>
+          </div>
+        </div>
+      </div>
+    }
+  }
+
+  @if ((esEmpresas && !Model.Empresas.Any()) || (!esEmpresas && !Model.Personas.Any()))
+  {
+    <div class="col-12">
+      <div class="alert alert-info sk-toast sk-toast-info" role="status">
+        <i class="bi bi-info-circle-fill"></i>
+        @(Model.SearchError is not null
+          ? "La búsqueda no está disponible en este momento."
+          : hayFiltros
+            ? "No se encontraron perfiles con esos filtros."
+            : esEmpresas ? "Aún no hay empresas registradas." : "Aún no hay personas registradas.")
+      </div>
+    </div>
+  }
+</div>
+
+@if (Model.TotalPaginas > 1)
+{
+  <nav aria-label="Paginación de perfiles" class="my-4 pb-2">
+    <ul class="pagination justify-content-center">
+      <li class="page-item @(Model.Pagina <= 1 ? "disabled" : "")">
+        <a class="page-link" asp-action="Index" asp-route-seccion="@Model.Seccion" asp-route-q="@Model.Q" asp-route-ciudad="@Model.Ciudad" asp-route-pagina="@(Model.Pagina - 1)" aria-label="Anterior"><span aria-hidden="true">&laquo;</span></a>
+      </li>
+      @for (var i = 1; i <= Model.TotalPaginas; i++)
+      {
+        <li class="page-item @(i == Model.Pagina ? "active" : "")">
+          <a class="page-link" asp-action="Index" asp-route-seccion="@Model.Seccion" asp-route-q="@Model.Q" asp-route-ciudad="@Model.Ciudad" asp-route-pagina="@i">@i</a>
+        </li>
+      }
+      <li class="page-item @(Model.Pagina >= Model.TotalPaginas ? "disabled" : "")">
+        <a class="page-link" asp-action="Index" asp-route-seccion="@Model.Seccion" asp-route-q="@Model.Q" asp-route-ciudad="@Model.Ciudad" asp-route-pagina="@(Model.Pagina + 1)" aria-label="Siguiente"><span aria-hidden="true">&raquo;</span></a>
+      </li>
+    </ul>
+  </nav>
+}
+
+@section Scripts {
+  <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.24.0/dist/algoliasearch-lite.umd.js"></script>
+  <script src="~/js/busqueda-algolia.js" asp-append-version="true"></script>
+}

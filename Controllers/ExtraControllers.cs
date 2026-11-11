@@ -86,6 +86,9 @@ public class AdminController(
             if (baneo is not null) db.BaneosDni.Remove(baneo);
         }
         await db.SaveChangesAsync();
+        var uSync = await db.Users.Include(x => x.Perfil).Include(x => x.Empresa)
+            .FirstAsync(x => x.Id == id);
+        await algolia.SyncPerfilUsuarioAsync(uSync);
         TempData["Success"] = $"Cuenta {estado}.";
         return RedirectToAction(nameof(Usuarios));
     }
@@ -254,6 +257,7 @@ public class AdminController(
             .Where(p => p.AutorId == id && p.Activa)
             .ToListAsync();
         await algolia.IndexPublicacionesAsync(publicaciones);
+        await algolia.SyncPerfilUsuarioAsync(u);
         TempData["Success"] = "Nombre actualizado.";
         return RedirectToAction(nameof(Usuarios), new { estado = "todos" });
     }
@@ -322,5 +326,38 @@ public class NotificationsController(ApplicationDbContext db, UserManager<Applic
         if (yo is null) return Json(new { total = 0 });
         var total = await db.Notificaciones.CountAsync(n => n.UsuarioId == yo.Id && !n.Leida);
         return Json(new { total });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Eliminar(int id)
+    {
+        var yo = await users.GetUserAsync(User);
+        if (yo is null) return Challenge();
+        var notificacion = await db.Notificaciones
+            .FirstOrDefaultAsync(n => n.Id == id && n.UsuarioId == yo.Id);
+        if (notificacion is not null)
+        {
+            db.Notificaciones.Remove(notificacion);
+            await db.SaveChangesAsync();
+            TempData["Success"] = "Notificación eliminada.";
+        }
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Limpiar()
+    {
+        var yo = await users.GetUserAsync(User);
+        if (yo is null) return Challenge();
+        var notificaciones = await db.Notificaciones
+            .Where(n => n.UsuarioId == yo.Id)
+            .ToListAsync();
+        if (notificaciones.Count > 0)
+        {
+            db.Notificaciones.RemoveRange(notificaciones);
+            await db.SaveChangesAsync();
+            TempData["Success"] = "Notificaciones eliminadas.";
+        }
+        return RedirectToAction(nameof(Index));
     }
 }

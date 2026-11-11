@@ -126,3 +126,19 @@ public sealed record PublicacionRiesgoVm(Publicacion Publicacion, RiesgoContenid
     public string BadgeClase => Riesgo.BadgeClase;
     public bool Riesgoso => Riesgo.Probabilidad >= SpamRiesgo.Umbral;
 }
+
+public class PerfilesFeedVm
+{
+    public string Seccion { get; set; } = "personas";
+    public string? Q { get; set; }
+    public string? Ciudad { get; set; }
+    public string? SearchError { get; set; }
+    public bool UsaAlgolia { get; set; }
+    public int Pagina { get; set; }
+    public int TotalPaginas { get; set; }
+    public int Total { get; set; }
+    public int TotalPersonas { get; set; }
+    public int TotalEmpresas { get; set; }
+    public IEnumerable<Perfil> Personas { get; set; } = [];
+    public IEnumerable<Empresa> Empresas { get; set; } = [];
+}
