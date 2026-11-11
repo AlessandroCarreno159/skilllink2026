@@ -1,18 +1,5 @@
-services:
-  redis:
-    image: redis:7-alpine
-    container_name: skilllink-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
-    volumes:
-      - skilllink-redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
-volumes:
-  skilllink-redis-data:
+# Redis local retirado: ahora se usa una instancia gestionada (Upstash).
+# La cadena se pasa por la variable de entorno REDIS_URL (ver .env local o
+# el panel del hosting). Este archivo se mantiene válido por si se agregan
+# otros servicios locales.
+services: {}
