@@ -4,9 +4,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SkillLink_dotnet.Data;
+using SkillLink_dotnet.Filters;
 using SkillLink_dotnet.Models;
 using SkillLink_dotnet.Services;
 using SkillLink_dotnet.Services.Chatbot;
+using SkillLink_dotnet.Services.Currency;
 using SkillLink_dotnet.Services.Geo;
 using SkillLink_dotnet.Services.Ml;
 using System.Security.Claims;
@@ -68,7 +70,15 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<ImageUploadService>();
 // Hasher que acepta los bcrypt del sistema Flask original y los migra a PBKDF2 al hacer login.
 builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, LegacyPasswordHasher>();
-builder.Services.AddControllersWithViews();
+builder.Services.Configure<CurrencyOptions>(
+    builder.Configuration.GetSection(CurrencyOptions.SectionName));
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<ExchangeRateService>((sp, client) =>
+{
+    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<CurrencyOptions>>().Value;
+    client.Timeout = TimeSpan.FromSeconds(Math.Max(1, opts.TimeoutSeconds));
+});
+builder.Services.AddControllersWithViews(options => options.Filters.Add<CurrencyViewFilter>());
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 builder.Services.AddSingleton<SkillLink.Services.AlgoliaService>();
 builder.Services.AddSingleton<SpamClasificadorService>();
@@ -78,7 +88,6 @@ builder.Services.AddScoped<ModeracionService>();
 // caché en memoria y cliente con timeout configurable.
 builder.Services.Configure<GeoOptions>(
     builder.Configuration.GetSection(GeoOptions.SectionName));
-builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient<GeoService>((sp, client) =>
 {
     var geo = sp.GetRequiredService<IOptions<GeoOptions>>().Value;

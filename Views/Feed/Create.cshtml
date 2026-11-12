@@ -22,12 +22,20 @@
       <div class="row">
         <div class="col-md-6 mb-3">
           <label asp-for="Tipo" class="form-label">Tipo</label>
-          <select asp-for="Tipo" class="form-select sk-auth-input">
+          <select asp-for="Tipo" id="Tipo" class="form-select sk-auth-input" aria-describedby="tipoDescripcion">
             @foreach (var kv in Catalogos.Tipos)
             {
-              <option value="@kv.Key">@kv.Value</option>
+              <option value="@kv.Key"
+                      data-descripcion="@Catalogos.DescripcionTipo(kv.Key)"
+                      data-precio="@(Catalogos.PermitePrecio(kv.Key) ? "1" : "0")"
+                      data-vacantes="@(Catalogos.PermiteVacantes(kv.Key) ? "1" : "0")"
+                      data-habilidades="@(Catalogos.PermiteHabilidades(kv.Key) ? "1" : "0")"
+                      data-precio-opcional="@(Catalogos.PrecioEsOpcional(kv.Key) ? "1" : "0")"
+                      data-etiqueta-habilidades="@Catalogos.EtiquetaHabilidades(kv.Key)">@kv.Value</option>
             }
           </select>
+          <small id="tipoDescripcion" class="text-muted d-block mt-2">@Catalogos.DescripcionTipo(Model.Tipo)</small>
+          <span asp-validation-for="Tipo" class="text-danger"></span>
         </div>
         <div class="col-md-6 mb-3">
           <label asp-for="Categoria" class="form-label">Categoría</label>
@@ -51,26 +59,46 @@
             }
           </select>
         </div>
-        <div class="col-md-3 mb-3">
-          <label class="form-label" for="precioMin">Precio mín. (S/)</label>
-          <input id="precioMin" inputmode="decimal" autocomplete="off" class="form-control sk-auth-input" placeholder="90" />
-          <small class="text-muted">Solo números, coma decimal. Enter ↵ pasa al máximo.</small>
-        </div>
-        <div class="col-md-3 mb-3">
-          <label class="form-label" for="precioMax">Precio máx. (S/)</label>
-          <input id="precioMax" inputmode="decimal" autocomplete="off" class="form-control sk-auth-input" placeholder="180" />
-          <small class="text-muted">Vacío = precio único: S/90. Enter ↵ compone el rango.</small>
-          <input type="hidden" asp-for="PrecioTexto" id="precioTexto" />
-          <span asp-validation-for="PrecioTexto" class="text-danger"></span>
-        </div>
-        <div class="col-md-3 mb-3">
+        <div id="grupoVacantes" class="col-md-6 mb-3 @(Catalogos.PermiteVacantes(Model.Tipo) ? "" : "d-none")">
           <label asp-for="Vacantes" class="form-label">Vacantes</label>
           <input asp-for="Vacantes" type="number" min="1" class="form-control sk-auth-input" placeholder="Sin Vacantes"/>
         </div>
       </div>
+      <div id="grupoPrecio" class="row @(Catalogos.PermitePrecio(Model.Tipo) ? "" : "d-none")">
+        <div class="col-md-6 col-lg-3 mb-3">
+          <label asp-for="Moneda" class="form-label">Tipo Moneda</label>
+          <select asp-for="Moneda" id="Moneda" class="form-select sk-auth-input">
+            <option value="PEN">Soles (S/)</option>
+            <option value="USD">Dólares (US$)</option>
+          </select>
+          <span asp-validation-for="Moneda" class="text-danger"></span>
+        </div>
+        <div class="col-md-6 col-lg-3 mb-3">
+          <label class="form-label" for="precioMin">Precio mín. (<span data-moneda-simbolo>S/</span>) <span class="sk-precio-opcional @(Catalogos.PrecioEsOpcional(Model.Tipo) ? "" : "d-none")">(opcional)</span></label>
+          <input id="precioMin" inputmode="decimal" autocomplete="off" class="form-control sk-auth-input" placeholder="90" />
+          <small class="text-muted">Solo números, coma decimal. Enter ↵ pasa al máximo.</small>
+        </div>
+        <div class="col-md-6 col-lg-3 mb-3">
+          <label class="form-label" for="precioMax">Precio máx. (<span data-moneda-simbolo>S/</span>) <span class="sk-precio-opcional @(Catalogos.PrecioEsOpcional(Model.Tipo) ? "" : "d-none")">(opcional)</span></label>
+          <input id="precioMax" inputmode="decimal" autocomplete="off" class="form-control sk-auth-input" placeholder="180" />
+          <small class="text-muted">Vacío = precio único. Enter ↵ compone el rango.</small>
+          <input type="hidden" asp-for="PrecioTexto" id="precioTexto" />
+          <span asp-validation-for="PrecioTexto" class="text-danger"></span>
+        </div>
+        <div class="col-md-6 col-lg-3 mb-3 d-flex align-items-end">
+          <div class="form-check">
+            <input asp-for="PrecioDual" class="form-check-input" />
+            <label asp-for="PrecioDual" class="form-check-label">Habilitar Precio Dual</label>
+            <div><small class="text-muted">Muestra el precio convertido a la otra moneda con el tipo de cambio actual.</small></div>
+          </div>
+        </div>
+      </div>
       <div class="mb-3"><label asp-for="Titulo" class="form-label">Título</label><input asp-for="Titulo" class="form-control sk-auth-input" /></div>
       <div class="mb-3"><label asp-for="Contenido" class="form-label">Contenido</label><textarea asp-for="Contenido" class="form-control sk-auth-input" rows="4"></textarea><span asp-validation-for="Contenido" class="text-danger"></span></div>
-      <div class="mb-3"><label asp-for="HabilidadesReq" class="form-label">Habilidades requeridas (separadas por comas)</label><input asp-for="HabilidadesReq" class="form-control sk-auth-input" /></div>
+      <div id="grupoHabilidades" class="mb-3 @(Catalogos.PermiteHabilidades(Model.Tipo) ? "" : "d-none")">
+        <label asp-for="HabilidadesReq" id="etiquetaHabilidades" class="form-label">@Catalogos.EtiquetaHabilidades(Model.Tipo)</label>
+        <input asp-for="HabilidadesReq" class="form-control sk-auth-input" />
+      </div>
       <div class="mb-3"><label asp-for="Imagen" class="form-label">Imagen (opcional, JPG/PNG/WebP hasta 5 MB)</label><input asp-for="Imagen" type="file" class="form-control sk-auth-input sk-file-es" accept="image/*" /><span asp-validation-for="Imagen" class="text-danger"></span></div>
       <button class="sk-btn-continuar" style="max-width:280px"><i class="bi bi-send-fill"></i> Publicar</button>
     </form>

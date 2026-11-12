@@ -69,6 +69,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             e.Property(p => p.Categoria).HasMaxLength(30);
             e.Property(p => p.Modalidad).HasMaxLength(30);
             e.Property(p => p.PrecioTexto).HasMaxLength(60);
+            e.Property(p => p.Moneda).HasMaxLength(3);
             e.HasIndex(p => p.Categoria);
             e.HasIndex(p => p.Modalidad);
         });

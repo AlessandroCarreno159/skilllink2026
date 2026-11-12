@@ -768,6 +768,14 @@ namespace SkillLink_dotnet.Data.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("varchar(30)");
 
+                    b.Property<string>("Moneda")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("varchar(3)");
+
+                    b.Property<bool>("PrecioDual")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<string>("PrecioTexto")
                         .HasMaxLength(60)
                         .HasColumnType("varchar(60)");

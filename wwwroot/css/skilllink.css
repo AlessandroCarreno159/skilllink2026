@@ -935,3 +935,34 @@ input.btn-check:checked + .sk-star-btn { font-weight: 700; color: #3d2e00;
   .sk-notif-item { gap: 0.6rem; padding: 0.8rem; }
 }
 
+/* Precio y moneda (PEN/USD) */
+.sk-precio { font-weight: 600; color: var(--sk-ink); }
+.sk-precio-sec {
+  margin-left: .35rem;
+  font-size: .85em;
+  color: #6b6780;
+  white-space: nowrap;
+}
+.sk-precio-badge {
+  display: inline-block;
+  margin-left: .45rem;
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  background: var(--sk-lilac-soft);
+  color: var(--sk-purple-dark);
+  font-size: .72rem;
+  font-weight: 600;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Compartir publicación (QR + enlaces) */
+.sk-share-card { border: 1px solid var(--sk-lilac); }
+.sk-share-qr {
+  border-radius: .55rem;
+  background: #fff;
+  padding: .35rem;
+  border: 1px solid var(--sk-lilac-light);
+  flex: none;
+}
+
