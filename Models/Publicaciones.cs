@@ -5,7 +5,11 @@ namespace SkillLink_dotnet.Models;
 public static class TiposPublicacion
 {
     public const string Oferta = "oferta";
+    public const string Convocatoria = "convocatoria";
     public const string Experiencia = "experiencia";
+    public const string Busqueda = "busqueda";
+    public const string Proyecto = "proyecto";
+    public const string Anuncio = "empresa_info";
 }
 
 public static class EstadosSolicitud

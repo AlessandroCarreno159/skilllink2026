@@ -37,11 +37,11 @@ public static class Catalogos
     public static readonly Dictionary<string, string> Tipos = new()
     {
         [TiposPublicacion.Oferta] = "Oferta",
-        ["convocatoria"] = "Convocatoria",
-        ["experiencia"] = "Experiencia",
-        ["busqueda"] = "Búsqueda",
-        ["proyecto"] = "Proyecto",
-        ["empresa_info"] = "Anuncio",
+        [TiposPublicacion.Convocatoria] = "Convocatoria",
+        [TiposPublicacion.Experiencia] = "Experiencia",
+        [TiposPublicacion.Busqueda] = "Búsqueda",
+        [TiposPublicacion.Proyecto] = "Proyecto",
+        [TiposPublicacion.Anuncio] = "Anuncio",
     };
 
     public static string Categoria(string? v)
@@ -52,6 +52,38 @@ public static class Catalogos
 
     public static string Tipo(string? v)
         => !string.IsNullOrWhiteSpace(v) && Tipos.TryGetValue(v, out var l) ? l : (v ?? "Publicación");
+
+    public static bool PermitePrecio(string? tipo)
+        => !EsTipo(tipo, TiposPublicacion.Experiencia)
+        && !EsTipo(tipo, TiposPublicacion.Proyecto)
+        && !EsTipo(tipo, TiposPublicacion.Anuncio);
+
+    public static bool PermiteVacantes(string? tipo)
+        => !EsTipo(tipo, TiposPublicacion.Experiencia)
+        && !EsTipo(tipo, TiposPublicacion.Anuncio);
+
+    public static bool PermiteHabilidades(string? tipo)
+        => !EsTipo(tipo, TiposPublicacion.Anuncio);
+
+    public static bool PrecioEsOpcional(string? tipo)
+        => EsTipo(tipo, TiposPublicacion.Busqueda);
+
+    public static string EtiquetaHabilidades(string? tipo)
+        => EsTipo(tipo, TiposPublicacion.Experiencia) || EsTipo(tipo, TiposPublicacion.Busqueda)
+            ? "Habilidades ofrecidas (separadas por comas)"
+            : "Habilidades requeridas (separadas por comas)";
+
+    public static string DescripcionTipo(string? tipo)
+        => tipo switch
+        {
+            TiposPublicacion.Oferta => "Ofrece tus servicios o tu disponibilidad para trabajar. Publica tu perfil y deja que empresas o clientes te contacten.",
+            TiposPublicacion.Convocatoria => "Convoca a personas o personal para cubrir una necesidad. Ideal para empresas o equipos que buscan contratar.",
+            TiposPublicacion.Experiencia => "Comparte trabajos o proyectos que ya realizaste. Adjunta evidencias de tu experiencia para mostrar tu trayectoria.",
+            TiposPublicacion.Busqueda => "Publica que buscas un trabajo en específico, o que buscas a una persona para un puesto o servicio determinado.",
+            TiposPublicacion.Proyecto => "Anuncia tu propio proyecto o iniciativa para convocar a personas que quieran sumarse y colaborar.",
+            TiposPublicacion.Anuncio => "Informa noticias, novedades o comunicados relacionados con tu empresa, comunidad o actividad.",
+            _ => "Selecciona el tipo de publicación que mejor describa lo que quieres compartir.",
+        };
 
     public static string Ciudad(Publicacion p)
         => p.Autor?.Perfil?.Ciudad ?? p.Autor?.Empresa?.Ciudad ?? "—";
@@ -72,6 +104,7 @@ public static class Catalogos
 
     public static string Precio(Publicacion p)
     {
+        if (!PermitePrecio(p.Tipo)) return "—";
         var moneda = MonedaBase(p);
         return TryParsePrecio(p.PrecioTexto, out var min, out var max)
             ? FormatearPrecio(min, max, moneda)
@@ -86,6 +119,8 @@ public static class Catalogos
     {
         var moneda = MonedaBase(p);
         var etiqueta = EtiquetaMoneda(p);
+        if (!PermitePrecio(p.Tipo))
+            return new PrecioVisible("—", null, etiqueta);
         if (!TryParsePrecio(p.PrecioTexto, out var min, out var max))
             return new PrecioVisible("A convenir", null, etiqueta);
 
@@ -138,6 +173,9 @@ public static class Catalogos
             : Monedas.Pen;
         return FormatearPrecio(min, max, moneda);
     }
+
+    private static bool EsTipo(string? tipo, string esperado)
+        => string.Equals(tipo, esperado, StringComparison.OrdinalIgnoreCase);
 
     private static bool TryParseNumero(string s, out decimal value)
         => decimal.TryParse(

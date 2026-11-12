@@ -51,6 +51,67 @@
   if (form) form.addEventListener('submit', componer);
 })();
 
+// --- Formulario de publicación: muestra u oculta campos según el tipo elegido ---
+(function () {
+  var tipo = document.getElementById('Tipo');
+  if (!tipo) return;
+  var descripcion = document.getElementById('tipoDescripcion');
+  var grupoPrecio = document.getElementById('grupoPrecio');
+  var grupoVacantes = document.getElementById('grupoVacantes');
+  var grupoHabilidades = document.getElementById('grupoHabilidades');
+  var etiquetaHabilidades = document.getElementById('etiquetaHabilidades');
+  var precioMin = document.getElementById('precioMin');
+  var precioMax = document.getElementById('precioMax');
+  var precioTexto = document.getElementById('precioTexto');
+  var moneda = document.getElementById('Moneda');
+  var vacantes = document.getElementById('Vacantes');
+  var habilidades = document.getElementById('HabilidadesReq');
+  var precioDual = document.getElementById('PrecioDual');
+
+  function mostrar(el, visible) {
+    if (el) el.classList.toggle('d-none', !visible);
+  }
+  function limpiar(el) {
+    if (el) el.value = '';
+  }
+  function aplicar(limpiarOcultos) {
+    var opcion = tipo.options[tipo.selectedIndex];
+    if (!opcion) return;
+    var permitePrecio = opcion.dataset.precio === '1';
+    var permiteVacantes = opcion.dataset.vacantes === '1';
+    var permiteHabilidades = opcion.dataset.habilidades === '1';
+    var precioOpcional = opcion.dataset.precioOpcional === '1';
+
+    if (descripcion) descripcion.textContent = opcion.dataset.descripcion || '';
+    mostrar(grupoPrecio, permitePrecio);
+    mostrar(grupoVacantes, permiteVacantes);
+    mostrar(grupoHabilidades, permiteHabilidades);
+    document.querySelectorAll('.sk-precio-opcional').forEach(function (el) {
+      el.classList.toggle('d-none', !precioOpcional);
+    });
+    if (etiquetaHabilidades && opcion.dataset.etiquetaHabilidades) {
+      etiquetaHabilidades.textContent = opcion.dataset.etiquetaHabilidades;
+    }
+
+    if (!limpiarOcultos) return;
+    if (!permitePrecio) {
+      limpiar(precioMin);
+      limpiar(precioMax);
+      limpiar(precioTexto);
+      if (precioDual) precioDual.checked = false;
+      if (moneda) {
+        moneda.value = 'PEN';
+        moneda.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+    if (!permiteVacantes) limpiar(vacantes);
+    if (!permiteHabilidades) limpiar(habilidades);
+  }
+
+  tipo.addEventListener('change', function () { aplicar(true); });
+  aplicar(false);
+})();
+
 // --- File pickers en español: botón "Elegir archivo" + nombre visible ---
 (function () {
   document.querySelectorAll('input[type="file"].sk-file-es').forEach(function (input) {

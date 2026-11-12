@@ -128,7 +128,10 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
     {
         if (!ModelState.IsValid) return View(vm);
         var yo = (await users.GetUserAsync(User))!;
-        var textoModeracion = $"{vm.Titulo} {vm.Contenido} {vm.HabilidadesReq}";
+        var permitePrecio = Catalogos.PermitePrecio(vm.Tipo);
+        var permiteVacantes = Catalogos.PermiteVacantes(vm.Tipo);
+        var habilidades = Catalogos.PermiteHabilidades(vm.Tipo) ? vm.HabilidadesReq : null;
+        var textoModeracion = $"{vm.Titulo} {vm.Contenido} {habilidades}";
         var riesgo = moderacion.Evaluar(textoModeracion);
         if (moderacion.BloqueaPublicacion(riesgo))
         {
@@ -143,20 +146,20 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             if (error is not null) { ModelState.AddModelError(nameof(vm.Imagen), error); return View(vm); }
             imagen = await uploads.GuardarAsync(vm.Imagen, "publicaciones");
         }
-        var moneda = string.Equals(vm.Moneda, Monedas.Usd, StringComparison.OrdinalIgnoreCase)
+        var moneda = permitePrecio && string.Equals(vm.Moneda, Monedas.Usd, StringComparison.OrdinalIgnoreCase)
             ? Monedas.Usd
             : Monedas.Pen;
-        var precio = Catalogos.PrecioParaGuardar(vm.PrecioTexto, moneda);
+        var precio = permitePrecio ? Catalogos.PrecioParaGuardar(vm.PrecioTexto, moneda) : null;
         var pub = new Publicacion
         {
             AutorId = yo.Id, Tipo = vm.Tipo, Titulo = vm.Titulo,
-            Contenido = vm.Contenido, HabilidadesReq = vm.HabilidadesReq, Imagen = imagen,
+            Contenido = vm.Contenido, HabilidadesReq = habilidades, Imagen = imagen,
             Categoria = string.IsNullOrWhiteSpace(vm.Categoria) ? null : vm.Categoria,
             Modalidad = string.IsNullOrWhiteSpace(vm.Modalidad) ? null : vm.Modalidad,
             PrecioTexto = precio,
             Moneda = moneda,
-            PrecioDual = vm.PrecioDual && precio is not null,
-            Vacantes = vm.Vacantes
+            PrecioDual = permitePrecio && vm.PrecioDual && precio is not null,
+            Vacantes = permiteVacantes ? vm.Vacantes : null
         };
         db.Publicaciones.Add(pub);
         await db.SaveChangesAsync();

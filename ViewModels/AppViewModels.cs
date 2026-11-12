@@ -61,7 +61,9 @@ public class EmpresaRegistroVm
 
 public class PublicacionCreateVm
 {
-    [Required(ErrorMessage = "El tipo es obligatorio.")] public string Tipo { get; set; } = "oferta";
+    [Required(ErrorMessage = "El tipo es obligatorio.")]
+    [RegularExpression("^(oferta|convocatoria|experiencia|busqueda|proyecto|empresa_info)$", ErrorMessage = "El tipo de publicación no es válido.")]
+    public string Tipo { get; set; } = "oferta";
     public string? Titulo { get; set; }
     [Required(ErrorMessage = "El contenido es obligatorio.")] public string Contenido { get; set; } = string.Empty;
     public string? HabilidadesReq { get; set; }

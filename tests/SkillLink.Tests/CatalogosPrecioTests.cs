@@ -87,4 +87,41 @@ public sealed class CatalogosPrecioTests
         Assert.Null(precio.Secundario);
         Assert.Equal("Solo soles", precio.EtiquetaMoneda);
     }
+
+    [Theory]
+    [InlineData(TiposPublicacion.Oferta, true, true, true)]
+    [InlineData(TiposPublicacion.Convocatoria, true, true, true)]
+    [InlineData(TiposPublicacion.Experiencia, false, false, true)]
+    [InlineData(TiposPublicacion.Busqueda, true, true, true)]
+    [InlineData(TiposPublicacion.Proyecto, false, true, true)]
+    [InlineData(TiposPublicacion.Anuncio, false, false, false)]
+    public void CamposPermitidos_DependenDelTipo(string tipo, bool precio, bool vacantes, bool habilidades)
+    {
+        Assert.Equal(precio, Catalogos.PermitePrecio(tipo));
+        Assert.Equal(vacantes, Catalogos.PermiteVacantes(tipo));
+        Assert.Equal(habilidades, Catalogos.PermiteHabilidades(tipo));
+    }
+
+    [Theory]
+    [InlineData(TiposPublicacion.Experiencia, "Habilidades ofrecidas (separadas por comas)")]
+    [InlineData(TiposPublicacion.Busqueda, "Habilidades ofrecidas (separadas por comas)")]
+    [InlineData(TiposPublicacion.Oferta, "Habilidades requeridas (separadas por comas)")]
+    public void EtiquetaHabilidades_CambiaSegunTipo(string tipo, string esperado)
+        => Assert.Equal(esperado, Catalogos.EtiquetaHabilidades(tipo));
+
+    [Fact]
+    public void PrecioMostrado_TipoSinPrecio_OcultaMonto()
+    {
+        var publicacion = new Publicacion
+        {
+            Tipo = TiposPublicacion.Proyecto,
+            PrecioTexto = "S/100",
+            Moneda = Monedas.Pen,
+        };
+
+        var precio = Catalogos.PrecioMostrado(publicacion, 0.29m);
+
+        Assert.Equal("—", precio.Principal);
+        Assert.Null(precio.Secundario);
+    }
 }
