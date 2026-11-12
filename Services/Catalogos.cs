@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using SkillLink_dotnet.Models;
 
 namespace SkillLink_dotnet.Services;
@@ -33,6 +34,114 @@ public static class Catalogos
         "Moquegua", "Pasco", "Piura", "Puno", "San Martín", "Tacna",
         "Tumbes", "Ucayali",
     };
+
+    private static readonly string[] PrefijosGeo =
+    {
+        "region de", "region", "departamento de", "departamento",
+        "provincia constitucional del", "provincia constitucional de",
+        "provincia de", "provincia", "province of", "province",
+        "department of", "department", "state of", "state",
+        "estado de", "estado", "distrito de", "distrito",
+        "municipalidad de", "municipalidad",
+    };
+
+    private static readonly string[] SufijosGeo =
+    {
+        "region", "province", "department", "state", "departamento", "provincia", "distrito",
+    };
+
+    private static readonly Dictionary<string, string> DepartamentosNormalizados =
+        Departamentos.ToDictionary(NormalizarTexto, d => d, StringComparer.Ordinal);
+
+    /// <summary>
+    /// Convierte un nombre geográfico de Nominatim (por ejemplo "Province of Lima"
+    /// o "Región de Áncash") al departamento canónico de <see cref="Departamentos"/>.
+    /// Devuelve null cuando no corresponde a un departamento peruano conocido.
+    /// </summary>
+    public static string? NormalizarDepartamento(string? valor)
+    {
+        if (string.IsNullOrWhiteSpace(valor)) return null;
+
+        var texto = QuitarSufijos(QuitarPrefijos(NormalizarTexto(valor)));
+        if (DepartamentosNormalizados.TryGetValue(texto, out var departamento)) return departamento;
+
+        // Nominatim puede enviar "Lima, Departamento de Lima, Perú" en display_name.
+        foreach (var parte in valor.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var candidato = QuitarSufijos(QuitarPrefijos(NormalizarTexto(parte)));
+            if (DepartamentosNormalizados.TryGetValue(candidato, out departamento)) return departamento;
+        }
+
+        return null;
+    }
+
+    private static string NormalizarTexto(string valor)
+    {
+        var descompuesto = valor.Trim().Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder(descompuesto.Length);
+        var separadorPendiente = false;
+
+        foreach (var c in descompuesto)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark) continue;
+
+            if (char.IsLetterOrDigit(c))
+            {
+                sb.Append(char.ToLowerInvariant(c));
+                separadorPendiente = false;
+            }
+            else if (!separadorPendiente && sb.Length > 0)
+            {
+                sb.Append(' ');
+                separadorPendiente = true;
+            }
+        }
+
+        return sb.ToString().Trim();
+    }
+
+    private static string QuitarPrefijos(string texto)
+    {
+        var cambiado = true;
+        while (cambiado && texto.Length > 0)
+        {
+            cambiado = false;
+            foreach (var prefijo in PrefijosGeo)
+            {
+                if (texto == prefijo)
+                {
+                    texto = string.Empty;
+                    cambiado = true;
+                    break;
+                }
+                if (texto.StartsWith(prefijo + " ", StringComparison.Ordinal))
+                {
+                    texto = texto[(prefijo.Length + 1)..].Trim();
+                    cambiado = true;
+                    break;
+                }
+            }
+        }
+        return texto;
+    }
+
+    private static string QuitarSufijos(string texto)
+    {
+        var cambiado = true;
+        while (cambiado && texto.Length > 0)
+        {
+            cambiado = false;
+            foreach (var sufijo in SufijosGeo)
+            {
+                if (texto.Length <= sufijo.Length + 1) continue;
+                if (!texto.EndsWith(" " + sufijo, StringComparison.Ordinal)) continue;
+                texto = texto[..^(sufijo.Length + 1)].Trim();
+                cambiado = true;
+                break;
+            }
+        }
+        return texto;
+    }
 
     public static readonly Dictionary<string, string> Tipos = new()
     {

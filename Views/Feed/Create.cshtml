@@ -1,13 +1,24 @@
 @* Crear Publicaciones *@
 @model SkillLink_dotnet.ViewModels.PublicacionCreateVm
 @using SkillLink_dotnet.Services
-@{ ViewData["Title"] = "Nueva publicación"; }
+@{
+  ViewData["Title"] = "Nueva publicación";
+  var ciudadAutor = ViewBag.CiudadAutor as string;
+}
 <h2 class="sk-section-title"><i class="bi bi-plus-circle-fill sk-ic-brand"></i> Nueva publicación</h2>
 <div class="sk-auth-card mt-3">
   <div class="sk-auth-body">
     <form asp-action="Create" method="post" enctype="multipart/form-data">
       @Html.AntiForgeryToken()
       <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+      <div class="mb-3">
+        <label class="form-label">Ubicación de la publicación</label>
+        <div class="form-control sk-auth-input bg-light d-flex align-items-center gap-2">
+          <i class="bi bi-geo-alt-fill sk-ic-pin"></i>
+          <span data-geo-ciudad-autor data-ciudad="@ciudadAutor">@(string.IsNullOrWhiteSpace(ciudadAutor) ? "Sin ubicación" : ciudadAutor)</span>
+        </div>
+        <small class="text-muted">Se toma de tu perfil. Si no tienes una, se detecta de forma aproximada y nunca se guardan coordenadas.</small>
+      </div>
       <div class="row">
         <div class="col-md-6 mb-3">
           <label asp-for="Tipo" class="form-label">Tipo</label>

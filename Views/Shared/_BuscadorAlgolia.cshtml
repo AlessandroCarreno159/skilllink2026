@@ -16,7 +16,7 @@
   var seccionNormalizada = string.Equals(seccion, "empresas", StringComparison.OrdinalIgnoreCase) ? "empresas" : "personas";
   var profileTipo = seccionNormalizada == "empresas" ? "empresa" : "persona";
   var conCiudad = ViewData["SearchConCiudad"] as bool? == true;
-  var ciudadSel = ViewData["SearchCiudad"] as string;
+  var ciudadSel = Catalogos.NormalizarDepartamento(ViewData["SearchCiudad"] as string);
 
   var indexPublicaciones = Cfg["Algolia:IndexName"] ?? "skilllink_index";
   var indexName = esPerfiles
@@ -75,8 +75,8 @@
     {
       <div class="sk-search-city">
         <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
-        <select name="ciudad" class="sk-search-select" aria-label="Filtrar por ciudad">
-          <option value="">Todas las ciudades</option>
+        <select name="ciudad" class="sk-search-select" aria-label="Filtrar por ciudad" data-geo-ciudad-filtro>
+          <option value="" selected="@(string.IsNullOrWhiteSpace(ciudadSel))">Todas las ciudades</option>
           @foreach (var d in Catalogos.Departamentos)
           {
             <option value="@d" selected="@(ciudadSel == d)">@d</option>

@@ -21,7 +21,17 @@
             </div>
             <div class="col-md-6 mb-3">
               <label asp-for="Ciudad" class="form-label">Departamento</label>
-              <input asp-for="Ciudad" class="form-control sk-auth-input" />
+              <select asp-for="Ciudad" class="form-select sk-auth-input" data-geo-ciudad>
+                <option value="">Seleccione un departamento</option>
+                @foreach (var departamento in Catalogos.Departamentos)
+                {
+                  <option value="@departamento">@departamento</option>
+                }
+              </select>
+              <button type="button" class="btn btn-sm sk-btn-lila mt-2" data-geo-usar-ubicacion data-geo-target="Ciudad">
+                <i class="bi bi-geo-alt-fill"></i> Usar mi ubicación
+              </button>
+              <small class="text-muted d-block" data-geo-status></small>
             </div>
           </div>
           <div class="mb-3">

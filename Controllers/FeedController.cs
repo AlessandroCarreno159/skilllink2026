@@ -6,6 +6,7 @@ using SkillLink_dotnet.Data;
 using SkillLink_dotnet.Filters;
 using SkillLink_dotnet.Models;
 using SkillLink_dotnet.Services;
+using SkillLink_dotnet.Services.Geo;
 using SkillLink_dotnet.Services.Ml;
 using SkillLink_dotnet.ViewModels;
 
@@ -17,6 +18,19 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
     [HttpGet]
     public async Task<IActionResult> Index(string? seccion = "laboral", string? tipo = null, string? q = null, string? ciudad = null, string? modalidad = null, string? categoria = null, int? estrellas = null, string? opCalif = ">=", int pagina = 1)
     {
+        var ciudadQuery = Catalogos.NormalizarDepartamento(ciudad);
+        ViewBag.CiudadExplicita = ciudadQuery is not null;
+
+        // Solo se aceptan departamentos del catálogo. Si la ciudad explícita no
+        // coincide, se muestran todas. Sin filtro explícito se usa la cookie,
+        // también validada, como respaldo (nunca coordenadas).
+        if (!string.IsNullOrWhiteSpace(ciudad))
+            ciudad = ciudadQuery;
+        else
+            ciudad = GeoCookies.EsTodas(Request)
+                ? null
+                : Catalogos.NormalizarDepartamento(GeoCookies.LeerCiudad(Request));
+
         var query = db.Publicaciones
             .Include(p => p.Autor).ThenInclude(a => a!.Perfil)
             .Include(p => p.Autor).ThenInclude(a => a!.Empresa)
@@ -118,7 +132,27 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
     [HttpGet]
     [Authorize]
     [Authorize(Roles = $"{Roles.Trabajador},{Roles.Empresa}")]
-    public IActionResult Create() => View(new PublicacionCreateVm());
+    public async Task<IActionResult> Create()
+    {
+        var yoId = users.GetUserId(User);
+        ViewBag.CiudadAutor = yoId is null ? null : await ObtenerCiudadAutorAsync(yoId);
+        return View(new PublicacionCreateVm());
+    }
+
+    private async Task<string?> ObtenerCiudadAutorAsync(string usuarioId)
+    {
+        var ciudad = await db.Perfiles
+            .Where(p => p.UsuarioId == usuarioId)
+            .Select(p => p.Ciudad)
+            .FirstOrDefaultAsync();
+
+        if (!string.IsNullOrWhiteSpace(ciudad)) return ciudad;
+
+        return await db.Empresas
+            .Where(e => e.UsuarioId == usuarioId)
+            .Select(e => e.Ciudad)
+            .FirstOrDefaultAsync();
+    }
 
     [HttpPost, ValidateAntiForgeryToken]
     [Authorize]
@@ -126,8 +160,9 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
     [Authorize(Roles = $"{Roles.Trabajador},{Roles.Empresa}")]
     public async Task<IActionResult> Create(PublicacionCreateVm vm)
     {
-        if (!ModelState.IsValid) return View(vm);
         var yo = (await users.GetUserAsync(User))!;
+        ViewBag.CiudadAutor = await ObtenerCiudadAutorAsync(yo.Id);
+        if (!ModelState.IsValid) return View(vm);
         var permitePrecio = Catalogos.PermitePrecio(vm.Tipo);
         var permiteVacantes = Catalogos.PermiteVacantes(vm.Tipo);
         var habilidades = Catalogos.PermiteHabilidades(vm.Tipo) ? vm.HabilidadesReq : null;
