@@ -15,6 +15,12 @@ public static class EstadosSolicitud
     public const string Rechazada = "rechazada";
 }
 
+public static class Monedas
+{
+    public const string Pen = "PEN";
+    public const string Usd = "USD";
+}
+
 // Equivale a tabla `publicaciones`.
 public class Publicacion
 {
@@ -31,6 +37,8 @@ public class Publicacion
     public string? Categoria { get; set; }      // construccion|tecnologia|diseno|hogar|otros
     public string? Modalidad { get; set; }      // tiempo_completo|medio_tiempo|por_proyecto
     public string? PrecioTexto { get; set; }    // ej. "S/ 80 - S/ 150"
+    public string Moneda { get; set; } = Monedas.Pen; // PEN | USD (datos previos = PEN)
+    public bool PrecioDual { get; set; }        // mostrar precio convertido a la otra moneda
     public int? Vacantes { get; set; }
     public bool Activa { get; set; } = true;
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;

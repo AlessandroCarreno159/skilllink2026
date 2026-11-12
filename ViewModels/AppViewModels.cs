@@ -67,9 +67,12 @@ public class PublicacionCreateVm
     public string? HabilidadesReq { get; set; }
     public string? Categoria { get; set; }
     public string? Modalidad { get; set; }
-    [RegularExpression(@"^(A convenir|S\/\d+(,\d+)?( - S\/\d+(,\d+)?)?)?$",
-        ErrorMessage = "Use el formato S/90, S/90 - S/180 o déjelo vacío (A convenir). Solo números y coma decimal.")]
+    [RegularExpression("^(PEN|USD)$", ErrorMessage = "Seleccione una moneda válida.")]
+    public string Moneda { get; set; } = Monedas.Pen;
+    [RegularExpression(@"^(A convenir|((S/|US\$)\d+(,\d+)?)( - (S/|US\$)\d+(,\d+)?)?)?$",
+        ErrorMessage = "Use el formato S/90, S/90 - S/180, US$25 o US$25 - US$50; o déjelo vacío (A convenir).")]
     public string? PrecioTexto { get; set; }
+    public bool PrecioDual { get; set; }
     public int? Vacantes { get; set; }
     public IFormFile? Imagen { get; set; }
 }

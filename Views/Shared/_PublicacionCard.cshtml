@@ -10,6 +10,7 @@
   if (ratings is not null && ratings.TryGetValue(Model.Id, out var rt)) rating = rt;
   var autorUrl = ImageUploadService.PerfilUrl(Model.Autor);
   var oficio = Model.Autor?.Perfil?.Especialidad ?? Model.Autor?.Empresa?.Sector;
+  var precio = Catalogos.PrecioMostrado(Model, ViewData["PenToUsd"] as decimal?);
 }
 <div class="card sk-pub-card mb-3 h-100">
   <div class="card-body">
@@ -41,7 +42,14 @@
           <p class="sk-meta"><i class="bi bi-star-fill sk-ic-star"></i> @rating.Value.Promedio.ToString("0.0") · @rating.Value.Total calificación(es)</p>
         }
         <p class="sk-meta"><i class="bi bi-geo-alt-fill sk-ic-pin"></i> @Catalogos.Ciudad(Model)</p>
-        <p class="sk-meta"><i class="bi bi-cash-coin sk-ic-cash"></i> @Catalogos.Precio(Model)</p>
+        <p class="sk-meta mb-1">
+          <i class="bi bi-cash-coin sk-ic-cash"></i> <span class="sk-precio">@precio.Principal</span>
+          @if (!string.IsNullOrWhiteSpace(precio.Secundario))
+          {
+            <span class="sk-precio-sec">@precio.Secundario</span>
+          }
+          <span class="sk-precio-badge">@precio.EtiquetaMoneda</span>
+        </p>
         <div class="sk-pub-actions d-flex flex-wrap gap-2">
           <a asp-controller="Feed" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye-fill"></i> Detalle</a>
           <a asp-controller="Feed" asp-action="Details" asp-route-id="@Model.Id" asp-fragment="comentarios" class="btn btn-sm sk-btn-lila"><i class="bi bi-chat-dots-fill"></i> Ver comentarios (@nComent)</a>

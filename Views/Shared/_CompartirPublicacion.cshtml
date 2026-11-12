@@ -1,0 +1,28 @@
+@* Parcial: compartir una publicación con QR y enlaces sociales *@
+@model SkillLink_dotnet.Models.Publicacion
+@{
+  var shareUrl = Url.Action("Details", "Feed", new { id = Model.Id }, protocol: Context.Request.Scheme) ?? string.Empty;
+  var titulo = Model.Titulo ?? "Publicación en SkillLink";
+  var shareUrlEnc = Uri.EscapeDataString(shareUrl);
+  var tituloEnc = Uri.EscapeDataString(titulo);
+  var textoWhatsApp = Uri.EscapeDataString($"{titulo} {shareUrl}");
+  var qrUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data={shareUrlEnc}";
+}
+<div class="card p-3 mb-3 sk-share-card">
+  <h6 class="sk-serif mb-2"><i class="bi bi-share-fill sk-ic-brand"></i> Compartir publicación</h6>
+  <div class="d-flex flex-column flex-sm-row gap-3 align-items-sm-center">
+    <img src="@qrUrl" alt="Código QR de la publicación" class="sk-share-qr" width="132" height="132" loading="lazy" />
+    <div class="flex-grow-1">
+      <p class="sk-meta mb-2">Escanea el QR o copia el enlace para compartir esta publicación.</p>
+      <div class="input-group input-group-sm mb-2">
+        <input id="shareUrl" class="form-control" value="@shareUrl" readonly />
+        <button class="btn btn-outline-secondary" type="button" data-copy-share><i class="bi bi-clipboard"></i> Copiar</button>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-sm btn-outline-success" target="_blank" rel="noopener" href="https://wa.me/?text=@textoWhatsApp"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+        <a class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u=@shareUrlEnc"><i class="bi bi-facebook"></i> Facebook</a>
+        <a class="btn btn-sm btn-outline-info" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text=@tituloEnc&url=@shareUrlEnc"><i class="bi bi-twitter-x"></i> X</a>
+      </div>
+    </div>
+  </div>
+</div>

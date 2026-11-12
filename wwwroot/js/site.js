@@ -1,11 +1,20 @@
 ﻿// Write your JavaScript code. SK: helpers de UI (precio por rango, file pickers en español).
 
-// --- Precio: compone S/min - S/max desde dos campos numéricos ---
+// --- Precio: compone S/min - S/max o US$/min - US$/max desde dos campos numéricos ---
 (function () {
   var min = document.getElementById('precioMin');
   var max = document.getElementById('precioMax');
   var out = document.getElementById('precioTexto');
   if (!min || !max || !out) return;
+  var moneda = document.getElementById('Moneda');
+
+  function simbolo() {
+    return moneda && moneda.value === 'USD' ? 'US$' : 'S/';
+  }
+  function syncSimbolos() {
+    var s = simbolo();
+    document.querySelectorAll('[data-moneda-simbolo]').forEach(function (el) { el.textContent = s; });
+  }
   function soloNumeros(el) {
     // Solo dígitos y una coma decimal
     var v = el.value.replace(/[^0-9,]/g, '');
@@ -16,7 +25,8 @@
   function componer() {
     var a = min.value.trim().replace(/^,+|,+$/g, '');
     var b = max.value.trim().replace(/^,+|,+$/g, '');
-    out.value = !a ? '' : (!b ? 'S/' + a : 'S/' + a + ' - S/' + b);
+    var s = simbolo();
+    out.value = !a ? '' : (!b ? s + a : s + a + ' - ' + s + b);
   }
   min.addEventListener('input', function () { soloNumeros(min); componer(); });
   max.addEventListener('input', function () { soloNumeros(max); componer(); });
@@ -26,6 +36,17 @@
   max.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') { e.preventDefault(); componer(); min.focus(); }
   });
+  if (moneda) {
+    moneda.addEventListener('change', function () { syncSimbolos(); componer(); });
+  }
+  // Restaura min/max si el servidor devolvió un PrecioTexto ya compuesto.
+  if (out.value && !min.value && !max.value) {
+    var nums = out.value.match(/\d+(?:[.,]\d+)?/g);
+    if (nums && nums[0]) min.value = nums[0];
+    if (nums && nums[1]) max.value = nums[1];
+  }
+  syncSimbolos();
+  componer();
   var form = out.closest('form');
   if (form) form.addEventListener('submit', componer);
 })();

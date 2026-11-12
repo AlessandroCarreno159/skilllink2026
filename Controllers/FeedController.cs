@@ -143,13 +143,19 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
             if (error is not null) { ModelState.AddModelError(nameof(vm.Imagen), error); return View(vm); }
             imagen = await uploads.GuardarAsync(vm.Imagen, "publicaciones");
         }
+        var moneda = string.Equals(vm.Moneda, Monedas.Usd, StringComparison.OrdinalIgnoreCase)
+            ? Monedas.Usd
+            : Monedas.Pen;
+        var precio = Catalogos.PrecioParaGuardar(vm.PrecioTexto, moneda);
         var pub = new Publicacion
         {
             AutorId = yo.Id, Tipo = vm.Tipo, Titulo = vm.Titulo,
             Contenido = vm.Contenido, HabilidadesReq = vm.HabilidadesReq, Imagen = imagen,
             Categoria = string.IsNullOrWhiteSpace(vm.Categoria) ? null : vm.Categoria,
             Modalidad = string.IsNullOrWhiteSpace(vm.Modalidad) ? null : vm.Modalidad,
-            PrecioTexto = string.IsNullOrWhiteSpace(vm.PrecioTexto) || vm.PrecioTexto.Trim() == "A convenir" ? null : vm.PrecioTexto.Trim(),
+            PrecioTexto = precio,
+            Moneda = moneda,
+            PrecioDual = vm.PrecioDual && precio is not null,
             Vacantes = vm.Vacantes
         };
         db.Publicaciones.Add(pub);

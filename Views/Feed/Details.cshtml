@@ -19,6 +19,7 @@
   var valoracionesList = valoraciones.ToList();
   var primeraValoracion = valoracionesList.FirstOrDefault();
   var totalResenas = valoracionesList.Count;
+  var precio = Catalogos.PrecioMostrado(Model, ViewData["PenToUsd"] as decimal?);
 }
 <div class="row g-4">
   <div class="col-lg-4">
@@ -55,7 +56,14 @@
       @(ratingTotal > 0 ? ratingProm.ToString("0.0") + $" · {ratingTotal} calificación(es)" : "Sin calificaciones")
       <span class="ms-3"><i class="bi bi-geo-alt-fill sk-ic-pin"></i> @Catalogos.Ciudad(Model)</span>
     </p>
-    <p class="fs-5">@Catalogos.Precio(Model)</p>
+    <p class="fs-5 mb-1">
+      <span class="sk-precio">@precio.Principal</span>
+      @if (!string.IsNullOrWhiteSpace(precio.Secundario))
+      {
+        <span class="sk-precio-sec">@precio.Secundario</span>
+      }
+      <span class="sk-precio-badge">@precio.EtiquetaMoneda</span>
+    </p>
     <p class="mb-1"><strong>Contacto:</strong></p>
     <p class="sk-meta mb-1"><i class="bi bi-envelope-fill"></i> @email</p>
     <p class="sk-meta mb-3"><i class="bi bi-telephone-fill"></i> @telefono</p>
@@ -67,6 +75,7 @@
         <i class="bi bi-chat-dots-fill"></i> Contactar por chat
       </button>
     }
+    <partial name="_CompartirPublicacion" model="Model" />
     <div class="mb-3">
       @if (User.IsInRole("admin"))
       {
@@ -133,7 +142,14 @@
       <div class="row small mt-3">
         <div class="col-md-6"><i class="bi bi-clock-fill sk-ic-brand"></i> <strong>Modalidad:</strong> @Catalogos.Modalidad(Model.Modalidad)</div>
         <div class="col-md-6"><i class="bi bi-grid-fill sk-ic-brand"></i> <strong>Categoría:</strong> @Catalogos.Categoria(Model.Categoria)</div>
-        <div class="col-md-6"><i class="bi bi-cash-coin sk-ic-cash"></i> <strong>Precio:</strong> @Catalogos.Precio(Model)</div>
+        <div class="col-md-6">
+          <i class="bi bi-cash-coin sk-ic-cash"></i> <strong>Precio:</strong> <span class="sk-precio">@precio.Principal</span>
+          @if (!string.IsNullOrWhiteSpace(precio.Secundario))
+          {
+            <span class="sk-precio-sec">@precio.Secundario</span>
+          }
+          <span class="sk-precio-badge">@precio.EtiquetaMoneda</span>
+        </div>
         <div class="col-md-6"><i class="bi bi-calendar3"></i> <strong>Publicado:</strong> @Model.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy")</div>
       </div>
     </div>
@@ -369,4 +385,8 @@
     }
   })();
 </script>
+
+@section Scripts {
+  <script src="~/js/share-qr.js" asp-append-version="true"></script>
+}
 

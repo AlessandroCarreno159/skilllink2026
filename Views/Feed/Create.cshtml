@@ -30,7 +30,7 @@
         </div>
       </div>
       <div class="row">
-        <div class="col-md-6 mb-3">
+        <div class="col-md-4 mb-3">
           <label asp-for="Modalidad" class="form-label">Tipo de trabajo</label>
           <select asp-for="Modalidad" class="form-select sk-auth-input">
             <option value="">—</option>
@@ -40,21 +40,38 @@
             }
           </select>
         </div>
-        <div class="col-md-3 mb-3">
-          <label class="form-label" for="precioMin">Precio mín. (S/)</label>
+        <div class="col-md-4 mb-3">
+          <label asp-for="Moneda" class="form-label">Tipo Moneda</label>
+          <select asp-for="Moneda" id="Moneda" class="form-select sk-auth-input">
+            <option value="PEN">Soles (S/)</option>
+            <option value="USD">Dólares (US$)</option>
+          </select>
+          <span asp-validation-for="Moneda" class="text-danger"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label asp-for="Vacantes" class="form-label">Vacantes</label>
+          <input asp-for="Vacantes" type="number" min="1" class="form-control sk-auth-input" placeholder="Sin Vacantes"/>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label class="form-label" for="precioMin">Precio mín. (<span data-moneda-simbolo>S/</span>)</label>
           <input id="precioMin" inputmode="decimal" autocomplete="off" class="form-control sk-auth-input" placeholder="90" />
           <small class="text-muted">Solo números, coma decimal. Enter ↵ pasa al máximo.</small>
         </div>
-        <div class="col-md-3 mb-3">
-          <label class="form-label" for="precioMax">Precio máx. (S/)</label>
+        <div class="col-md-4 mb-3">
+          <label class="form-label" for="precioMax">Precio máx. (<span data-moneda-simbolo>S/</span>)</label>
           <input id="precioMax" inputmode="decimal" autocomplete="off" class="form-control sk-auth-input" placeholder="180" />
-          <small class="text-muted">Vacío = precio único: S/90. Enter ↵ compone el rango.</small>
+          <small class="text-muted">Vacío = precio único. Enter ↵ compone el rango.</small>
           <input type="hidden" asp-for="PrecioTexto" id="precioTexto" />
           <span asp-validation-for="PrecioTexto" class="text-danger"></span>
         </div>
-        <div class="col-md-3 mb-3">
-          <label asp-for="Vacantes" class="form-label">Vacantes</label>
-          <input asp-for="Vacantes" type="number" min="1" class="form-control sk-auth-input" placeholder="Sin Vacantes"/>
+        <div class="col-md-4 mb-3 d-flex align-items-end">
+          <div class="form-check">
+            <input asp-for="PrecioDual" class="form-check-input" />
+            <label asp-for="PrecioDual" class="form-check-label">Habilitar Precio Dual</label>
+            <div><small class="text-muted">Muestra el precio convertido a la otra moneda con el tipo de cambio actual.</small></div>
+          </div>
         </div>
       </div>
       <div class="mb-3"><label asp-for="Titulo" class="form-label">Título</label><input asp-for="Titulo" class="form-control sk-auth-input" /></div>
