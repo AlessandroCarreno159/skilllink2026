@@ -8,7 +8,20 @@
   <div asp-validation-summary="ModelOnly" class="text-danger"></div>
   <div class="mb-3"><label asp-for="NombreContacto" class="form-label">Nombre de contacto</label><input asp-for="NombreContacto" class="form-control" /></div>
   <div class="row">
-    <div class="col-md-6 mb-3"><label asp-for="Ciudad" class="form-label">Departamento</label><input asp-for="Ciudad" class="form-control" /></div>
+    <div class="col-md-6 mb-3">
+      <label asp-for="Ciudad" class="form-label">Departamento</label>
+      <select asp-for="Ciudad" class="form-select" data-geo-ciudad>
+        <option value="">Seleccione un departamento</option>
+        @foreach (var departamento in Catalogos.Departamentos)
+        {
+          <option value="@departamento">@departamento</option>
+        }
+      </select>
+      <button type="button" class="btn btn-sm sk-btn-lila mt-2" data-geo-usar-ubicacion data-geo-target="Ciudad">
+        <i class="bi bi-geo-alt-fill"></i> Usar mi ubicación
+      </button>
+      <small class="text-muted d-block" data-geo-status></small>
+    </div>
     <div class="col-md-6 mb-3"><label asp-for="Telefono" class="form-label">Teléfono</label><input asp-for="Telefono" class="form-control" /></div>
   </div>
   <div class="mb-3"><label asp-for="Sector" class="form-label">Sector</label><input asp-for="Sector" class="form-control" /></div>

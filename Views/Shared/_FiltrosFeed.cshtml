@@ -9,11 +9,11 @@
 <div class="sk-filter-panel mb-4">
   <div class="sk-filter-panel-head">
     <h5><i class="bi bi-sliders"></i> Filtros</h5>
-    <a class="sk-filter-clear" asp-controller="Feed" asp-action="Index"><i class="bi bi-x-circle"></i> Limpiar</a>
+    <a class="sk-filter-clear" asp-controller="Feed" asp-action="Index" data-geo-todas="1"><i class="bi bi-x-circle"></i> Limpiar</a>
   </div>
   <form method="get" class="sk-filter-form">
     <input type="hidden" name="q" value="@q" />
-    <input type="hidden" name="ciudad" value="@ciudad" />
+    <input type="hidden" name="ciudad" value="@ciudad" data-geo-ciudad-filtro />
     @if (!string.IsNullOrWhiteSpace(tipo)) { <input type="hidden" name="tipo" value="@tipo" /> }
     <div class="row g-3 align-items-end">
       <div class="col-md-4">

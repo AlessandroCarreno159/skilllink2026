@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SkillLink_dotnet.Data;
 using SkillLink_dotnet.Models;
+using SkillLink_dotnet.Services.Geo;
 using SkillLink_dotnet.ViewModels;
 
 namespace SkillLink_dotnet.Controllers;
@@ -14,7 +15,11 @@ public class PerfilesFeedController(ApplicationDbContext db, SkillLink.Services.
     {
         seccion = string.Equals(seccion, "empresas", StringComparison.OrdinalIgnoreCase) ? "empresas" : "personas";
         q = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
-        ciudad = string.IsNullOrWhiteSpace(ciudad) ? null : ciudad.Trim();
+        var ciudadQuery = string.IsNullOrWhiteSpace(ciudad) ? null : ciudad.Trim();
+        ViewBag.CiudadExplicita = ciudadQuery is not null;
+
+        // Respaldo por cookie de departamento cuando no hay filtro explícito.
+        ciudad = ciudadQuery ?? (GeoCookies.EsTodas(Request) ? null : GeoCookies.LeerCiudad(Request));
 
         const int porPagina = 12;
         var vm = new PerfilesFeedVm { Seccion = seccion, Q = q, Ciudad = ciudad };

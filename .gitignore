@@ -25,7 +25,8 @@ Backups/
 # Solo se ignoran los archivos NUEVOS que suban los usuarios:
 wwwroot/uploads/**
 
-## Sesiones y notas con posibles secretos (no subir jamás)
+## Sesiones, configuración local y notas con posibles secretos (no subir jamás)
+appsettings.Development.json
 session-*.md
 Lista1OpenCode.md
 secrets.json

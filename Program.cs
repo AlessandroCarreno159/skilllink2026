@@ -1,12 +1,23 @@
+using DotNetEnv;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SkillLink_dotnet.Data;
 using SkillLink_dotnet.Models;
 using SkillLink_dotnet.Services;
 using SkillLink_dotnet.Services.Chatbot;
+using SkillLink_dotnet.Services.Geo;
 using SkillLink_dotnet.Services.Ml;
 using System.Security.Claims;
+
+// Configuración local: carga .env en el proceso antes de crear el builder.
+// En producción (sin .env) se usan las variables de entorno del hosting.
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,6 +73,21 @@ builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 builder.Services.AddSingleton<SkillLink.Services.AlgoliaService>();
 builder.Services.AddSingleton<SpamClasificadorService>();
 builder.Services.AddScoped<ModeracionService>();
+
+// Geocodificación (Nominatim): User-Agent obligatorio en cada petición,
+// caché en memoria y cliente con timeout configurable.
+builder.Services.Configure<GeoOptions>(
+    builder.Configuration.GetSection(GeoOptions.SectionName));
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<GeoService>((sp, client) =>
+{
+    var geo = sp.GetRequiredService<IOptions<GeoOptions>>().Value;
+    if (Uri.TryCreate(geo.BaseUrl, UriKind.Absolute, out var baseUri))
+        client.BaseAddress = baseUri;
+    client.Timeout = TimeSpan.FromSeconds(geo.TimeoutSeconds > 0 ? geo.TimeoutSeconds : 5);
+    if (!string.IsNullOrWhiteSpace(geo.UserAgent))
+        client.DefaultRequestHeaders.UserAgent.TryParseAdd(geo.UserAgent);
+});
 
 builder.Services.Configure<ChatbotOptions>(
     builder.Configuration.GetSection(ChatbotOptions.SectionName));

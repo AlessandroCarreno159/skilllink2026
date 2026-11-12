@@ -3,6 +3,7 @@
 @inject ImageUploadService Uploads
 @{
   ViewData["Title"] = "Feed de perfiles";
+  ViewData["GeoAutoFeed"] = true;
   var esEmpresas = Model.Seccion == "empresas";
   var hayFiltros = !string.IsNullOrWhiteSpace(Model.Q) || !string.IsNullOrWhiteSpace(Model.Ciudad);
 

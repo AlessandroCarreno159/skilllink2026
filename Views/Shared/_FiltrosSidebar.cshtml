@@ -27,13 +27,13 @@
       <ul class="sk-filter-list">
         @foreach (var u in new[] { "Arequipa", "Lima" })
         {
-          <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="ciudad" value="@u" checked="@(ciudad == u)" /><span>@u</span></label></li>
+          <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="ciudad" value="@u" checked="@(ciudad == u)" data-geo-ciudad-filtro /><span>@u</span></label></li>
         }
         @foreach (var d in Catalogos.Departamentos.Where(x => x != "Lima" && x != "Arequipa"))
         {
-          <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="ciudad" value="@d" checked="@(ciudad == d)" /><span>@d</span></label></li>
+          <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="ciudad" value="@d" checked="@(ciudad == d)" data-geo-ciudad-filtro /><span>@d</span></label></li>
         }
-        <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="ciudad" value="" checked="@(string.IsNullOrWhiteSpace(ciudad))" /><span>Todas</span></label></li>
+        <li><label class="sk-filter-opt"><input type="radio" class="d-none" name="ciudad" value="" checked="@(string.IsNullOrWhiteSpace(ciudad))" data-geo-ciudad-filtro /><span>Todas</span></label></li>
       </ul>
     </div>
 
