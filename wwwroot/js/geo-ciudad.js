@@ -77,6 +77,27 @@
     return true;
   }
 
+  function selectCiudadFeed() {
+    return document.querySelector('.sk-search-form select[name="ciudad"], select[name="ciudad"]');
+  }
+
+  function ciudadEnLista(ciudad) {
+    var select = selectCiudadFeed();
+    if (!select) return true;
+    return !!opcionDeCiudad(select, ciudad);
+  }
+
+  function seleccionarTodasLasCiudades() {
+    var select = selectCiudadFeed();
+    if (select && select.value) {
+      select.value = '';
+      if (typeof Event === 'function') {
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+    marcarTodas();
+  }
+
   function soportaGeolocalizacion() {
     return window.isSecureContext === true && !!navigator.geolocation;
   }
@@ -279,19 +300,32 @@
 
     var params = new URLSearchParams(window.location.search);
     var ciudadExplicita = (params.get('ciudad') || '').trim();
-    if (ciudadExplicita) return;
+    if (ciudadExplicita) {
+      // Si la ciudad de la URL no existe en el catálogo mostrado, se limpia el
+      // filtro y se muestran todas las ciudades.
+      if (!ciudadEnLista(ciudadExplicita)) {
+        seleccionarTodasLasCiudades();
+        params.delete('ciudad');
+        var query = params.toString();
+        window.location.replace(window.location.pathname + (query ? '?' + query : '') + window.location.hash);
+      }
+      return;
+    }
     if (todasSeleccionadas()) return;
 
     var ciudad = ciudadGuardada();
     if (ciudad) {
-      recargarConCiudad(ciudad);
+      if (ciudadEnLista(ciudad)) recargarConCiudad(ciudad);
+      else seleccionarTodasLasCiudades();
       return;
     }
 
     if (!soportaGeolocalizacion()) return;
 
     usarMiUbicacion().then(function (detectada) {
-      if (detectada) recargarConCiudad(detectada);
+      if (!detectada) return;
+      if (ciudadEnLista(detectada)) recargarConCiudad(detectada);
+      else seleccionarTodasLasCiudades();
     }).catch(function () {
       // Sin permiso o sin red: se mantiene el feed sin filtro de ubicación.
     });

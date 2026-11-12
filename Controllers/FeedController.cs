@@ -18,15 +18,18 @@ public class FeedController(ApplicationDbContext db, UserManager<ApplicationUser
     [HttpGet]
     public async Task<IActionResult> Index(string? seccion = "laboral", string? tipo = null, string? q = null, string? ciudad = null, string? modalidad = null, string? categoria = null, int? estrellas = null, string? opCalif = ">=", int pagina = 1)
     {
-        var ciudadQuery = string.IsNullOrWhiteSpace(ciudad) ? null : ciudad.Trim();
+        var ciudadQuery = Catalogos.NormalizarDepartamento(ciudad);
         ViewBag.CiudadExplicita = ciudadQuery is not null;
 
-        // Si no hay filtro explícito y el usuario no eligió "Todas", se usa el
-        // departamento recordado en cookie como respaldo (nunca coordenadas).
-        if (ciudadQuery is not null)
+        // Solo se aceptan departamentos del catálogo. Si la ciudad explícita no
+        // coincide, se muestran todas. Sin filtro explícito se usa la cookie,
+        // también validada, como respaldo (nunca coordenadas).
+        if (!string.IsNullOrWhiteSpace(ciudad))
             ciudad = ciudadQuery;
         else
-            ciudad = GeoCookies.EsTodas(Request) ? null : GeoCookies.LeerCiudad(Request);
+            ciudad = GeoCookies.EsTodas(Request)
+                ? null
+                : Catalogos.NormalizarDepartamento(GeoCookies.LeerCiudad(Request));
 
         var query = db.Publicaciones
             .Include(p => p.Autor).ThenInclude(a => a!.Perfil)
